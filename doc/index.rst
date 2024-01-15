@@ -1,7 +1,26 @@
 tinytex
 =======
 
-Lorem upsum
+Python texture processing library: surface processing, resampling, tiling and noise generation.
+
+This library can be used to:
+
+- resample images
+- create texture atlases
+- split textures into tiles and merge tile sets
+- seamlessly stitch textures with color or vector data
+    - tile set blending
+    - self-tiling 
+- compute/approximate surface geometry
+    - normals from height/displacement
+    - height/displacement from normals
+    - curvature
+- approximate occlusion
+    - screen space ambient occlusion 
+    - bent normals
+- blend normal maps
+- convert between specular-workflow and metallic-workflow PBR texture maps
+- generate tiling noise
 
 Getting started
 ---------------
@@ -57,3 +76,12 @@ Special thanks
     GitHub <https://github.com/Sam-Izdat/tinytex>
     PyPi <https://pypi.org/project/tinytex/>
     Docs <https://sam-izdat.github.io/tinytex-docs/>
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Sibling projects:
+    :hidden:
+
+    tinylcm <https://sam-izdat.github.io/tinylcm-docs/>
+    tinypbr <https://sam-izdat.github.io/tinypbr-docs/>
+    tinycio <https://sam-izdat.github.io/tinycio-docs/>
