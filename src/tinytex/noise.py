@@ -4,9 +4,12 @@ from scipy.spatial import cKDTree
 
 from tinycio import MonoImage
 
-from util import *
+from .util import *
 
 class Noise:
+
+    #TODO
+    #https://thebookofshaders.com/13/
 
     @staticmethod
     def __interpolant_quintic(t):
@@ -58,9 +61,9 @@ class Noise:
             ValueError: If shape is not a multiple of res.
         """
 
-        if interpolant == 'quintic':
+        if interpolant.strip().lower() == 'quintic':
             interpolant = cls.__interpolant_quintic
-        elif interpolant == 'smoothstep':
+        elif interpolant.strip().lower() == 'smoothstep':
             interpolant = cls.__interpolant_smoothstep
         else:
             raise Exception('unrecognized interpolant')
@@ -95,7 +98,7 @@ class Noise:
     @classmethod
     def perlin(cls, shape, density=5, tileable=(True, True), interpolant='quintic'):
         assert density > 0., "density cannot be 0"
-        assert is_power_of_two(shape[0]) and is_power_of_two(shape[1]), "height and width must be power-of-two"
+        assert is_pot(shape[0]) and is_pot(shape[1]), "height and width must be power-of-two"
         res = (
             find_closest_divisor(shape[0], np.ceil(shape[0]/256.*density)), 
             find_closest_divisor(shape[1], np.ceil(shape[1]/256.*density)))
@@ -165,17 +168,20 @@ class Noise:
 
     @classmethod
     def fractal(cls, 
-            shape, density, octaves=1, persistence=0.5,
+            shape, density=5., octaves=5, persistence=0.5,
             lacunarity=2, tileable=(True, True),
             interpolant='quintic'
     ):
         assert density > 0., "density cannot be 0"
-        assert is_power_of_two(shape[0]) and is_power_of_two(shape[1]), "height and width must be power-of-two"
+        assert is_pot(shape[0]) and is_pot(shape[1]), "height and width must be power-of-two"
         res = (
             find_closest_divisor(shape[0], np.ceil(shape[0]/256.*density)), 
             find_closest_divisor(shape[1], np.ceil(shape[1]/256.*density)))
         out = cls.__fractal_np(shape, res, octaves, persistence, lacunarity, tileable, interpolant)
         return torch.from_numpy(np.expand_dims(out, 0).astype(np.float32)*0.5+0.5).clamp(0., 1.)
+
+    #TODO: turbulence
+    #TODO: ridge
 
     @classmethod
     def __worley_np(cls, shape, density, tileable=(True, True)):
@@ -199,8 +205,8 @@ class Noise:
 
     @classmethod
     def worley(cls, shape, density=5, intensity=1, tileable=(True, True)):
-        assert density > 0., "density cannot be 0"
-        assert is_power_of_two(shape[0]) and is_power_of_two(shape[1]), "height and width must be power-of-two"
+        assert density > 0., "density must be above zero"
+        assert is_pot(shape[0]) and is_pot(shape[1]), "height and width must be power-of-two"
         density *= 10
         intensity = 0.01 * intensity
         out = cls.__worley_np(shape, density, tileable)

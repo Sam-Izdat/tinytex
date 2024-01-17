@@ -1,7 +1,10 @@
 tinytex
 =======
 
-Python texture processing library: surface processing, resampling, tiling and noise generation.
+A lightweight Python texture editing and generation library: surface processing, atlasing, tiling, signed distance fields, resampling and noise generation.
+
+
+TODO: polar, log-polar transform, wavelets
 
 This library can be used to:
 
@@ -9,15 +12,21 @@ This library can be used to:
 - create texture atlases
 - split textures into tiles and merge tile sets
 - seamlessly stitch textures with color or vector data
+
     - tile set blending
     - self-tiling 
+
 - compute/approximate surface geometry
+
     - normals from height/displacement
     - height/displacement from normals
     - curvature
+
 - approximate occlusion
+
     - screen space ambient occlusion 
     - bent normals
+
 - blend normal maps
 - convert between specular-workflow and metallic-workflow PBR texture maps
 - generate tiling noise
@@ -36,15 +45,13 @@ Release version
 
 .. rubric:: Requirements
 
-
-.. rubric:: Optional requirements
-
 - PyTorch >=2.0 (earlier versions untested)
 - NumPy >=1.21
 - imageio >=2.9 (with PNG-FI FreeImage plugin)
 - tqdm >=4.64
 - toml >=0.10
 
+.. rubric:: Optional requirements
 
 .. rubric:: License
 

@@ -3,7 +3,7 @@ import numpy as np
 
 from combomethod import combomethod
 
-from util import *
+from .util import *
 
 class Atlas:
     min_auto_size = 64
@@ -56,7 +56,7 @@ class Atlas:
 
     @classmethod
     def __sp_rem(cls, spaces, idx):
-        return torch.cat((spaces[:idx],spaces[idx+1:]))
+        return torch.cat((spaces[:idx], spaces[idx+1:]))
 
     # https://github.com/TeamHypersomnia/rectpack2D?tab=readme-ov-file#algorithm
     # A bit slower. Suitable for high variance.
@@ -145,8 +145,8 @@ class Atlas:
             else:
                 raise Exception(cls.err_out_of_bounds, + f" at w {atlas_width} h {atlas_height}")
 
+        # Sort textures by input order
         texture_rects.sort(key=lambda tex: tex.idx)
-        index = []
         index = [(tex.x, tex.y, tex.x+tex.tensor.size(2), tex.y+tex.tensor.size(1)) for tex in texture_rects]
         return atlas, index                        
 
@@ -161,8 +161,6 @@ class Atlas:
         # Sort textures by height in descending order
         texture_rects.sort(key=lambda tex: tex.tensor.size(1), reverse=True)
 
-        # atlas_width = sum(tex.tensor.size(2) for tex in textures)
-        # atlas_height = max(tex.tensor.size(1) for tex in textures)
         atlas_height = shape[0]
         atlas_width = shape[1]
 
@@ -206,7 +204,7 @@ class Atlas:
 
             tex.was_packed = True
 
+        # Sort textures by input order
         texture_rects.sort(key=lambda tex: tex.idx)
-        index = []
         index = [(tex.x, tex.y, tex.x+tex.tensor.size(2), tex.y+tex.tensor.size(1)) for tex in texture_rects]
         return atlas, index

@@ -2,6 +2,7 @@ _build/*
 _static/*
 out/*
 data/test/*
+scratch/*
 !out/README.md
 
 # Editors

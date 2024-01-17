@@ -14,7 +14,7 @@ except ImportError:
     except ImportError:
         from scipy.sparse.linalg import spsolve as lss
 
-from util import *
+from .util import *
 
 class Tiler:
     #TODO: get_tile_index

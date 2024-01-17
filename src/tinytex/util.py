@@ -13,7 +13,7 @@ def find_closest_divisor(n, m):
     divisions = n / divisors 
     return divisions[np.argmin(np.abs(m - divisions))].astype(int)
 
-def is_power_of_two(x:int) -> int:
+def is_pot(x:int) -> int:
     """
     Check if value is power-of-two.
 
@@ -28,6 +28,15 @@ def next_pot(x:int) -> int:
     :return: Next power-of-two integer.
     """
     return 2 ** np.ceil(np.log2(x))
+
+def smooth_step(edge0, edge1, x):
+    """
+    Hermite interpolation.
+
+    :return: Interpolated value.
+    """
+    x = torch.clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
+    return x * x * (3 - 2 * x)
 
 def seed_everything(seed: int):
     """
