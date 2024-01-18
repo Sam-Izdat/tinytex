@@ -6,37 +6,39 @@ from .util import *
 
 class Geometry:
 
-    halfpi = 1.57079632679
+    err_size = "tensor must be sized [C, H, W] or [N, C, H, W]"
 
     @classmethod
     def normals_to_angles(cls,
         normal_map:torch.Tensor, 
         recompute_z:bool=False, 
-        normalize_t:bool=False, 
-        from_image:bool=True, 
-        to_image:bool=True):
+        normalize:bool=False, 
+        from_rescaled:bool=False, 
+        to_rescaled:bool=False):
         """
-        Convert normals from xyz unit vectors to spherical coordinates.
+        Convert tangent-space normals vectors to scaled spherical coordinates.
 
-        NOTE: Assumes 0-1 range RGB map input and returns 0-1 range RG map by default.
-
-        :param torch.tensor normal_map: Input normal map sized [N, C=3, H, W].
+        :param torch.tensor normal_map: Input normal map sized [N, C=3, H, W] or [C=3, H, W].
         :param bool recompute_z: Discard and recompute normals' z-channel before conversion.
-        :param bool normalize_t: Normalize vectors before conversion.
-        :param bool from_image: Accept image in 0-1 value range.
-        :param bool to_image: Return image in 0-1 value range.
+        :param bool normalize: Normalize vectors before conversion.
+        :param bool from_rescaled: Accept image tensor in [0, 1] value range.
+        :param bool to_rescaled: Return image tensor in [0, 1] value range.
 
-        :return: Z-axis angle and Y-axis angle tensor size [N, C=2, H, W].
+        :return: Normalized z-axis angle and y-axis angle tensor sized [N, C=2, H, W] or [C=2, H, W].
         :rtype: torch.tensor
         """
-
+        ndim = len(normal_map.size())
+        assert ndim == 3 or ndim == 4, cls.err_size
+        nobatch = ndim == 3
+        if nobatch: normal_map = normal_map.unsqueeze(0)
+        assert normal_map.size(1), "normal map must have 3 channels"
         # Convert the RGB image tensor to a tensor with values in the range [-1, 1]
         
-        if from_image: normal_map = normal_map * 2 - 1   
+        if from_rescaled: normal_map = normal_map * 2 - 1   
 
         # Normalize the vector
         if recompute_z: normal_map = cls.__recompute_normal_z(normal_map, is_image=False)
-        if normalize_t: normal_map = cls.__normalize_vec(normal_map)
+        if normalize: normal_map = cls.__normalize_vec(normal_map)
 
         # Extract the red, green, and blue channels
         x = normal_map[:, 0:1, :, :]
@@ -44,37 +46,41 @@ class Geometry:
         z = normal_map[:, 2:3, :, :]
 
         # Calculate angles and normalize 0-1 range
-        atan2_xz = torch.atan2(x, z)/cls.halfpi
-        acos_y = torch.acos(y)/cls.halfpi
+        atan2_xz = torch.atan2(x, z) / (torch.pi * 0.5)
+        acos_y = torch.acos(y) / torch.pi
         angles = torch.cat([atan2_xz, acos_y], dim=1)
-        return angles * 0.5 + 0.5 if to_image else angles
+        out = angles * 0.5 + 0.5 if to_rescaled else angles
+        return out.squeeze(0) if nobatch else out
 
     @classmethod
     def angles_to_normals(cls, 
         angle_map:torch.Tensor, 
         recompute_z:bool=False, 
-        normalize_t:bool=False, 
-        from_image:bool=True, 
-        to_image:bool=True) -> torch.Tensor:
+        normalize:bool=False, 
+        from_rescaled:bool=False, 
+        to_rescaled:bool=False) -> torch.Tensor:
         """
-        Convert spherical coordinates representation of normals to xyz unit vectors.
+        Convert scaled spherical coordinates to tangent-space normal vectors.
 
-        NOTE: Assumes 0-1 range RG map input and returns 0-1 range RGB map by default.
-
-        :param torch.tensor angle_map: Spherical coordinates tensor sized [N, C=2, H, W].
+        :param torch.tensor angle_map: Normalized spherical coordinates tensor sized [N, C=2, H, W] or [C=2, H, W].
         :param bool recompute_z: Discard and recompute normals' z-channel after conversion.
-        :param bool normalize_t: Normalize vectors after conversion.
-        :param bool from_image: Accept image in 0-1 value range.
-        :param bool to_image: Return image in 0-1 value range.
+        :param bool normalize: Normalize vectors after conversion.
+        :param bool from_rescaled: Accept image tensor in [0, 1] value range.
+        :param bool to_rescaled: Return image tensor in [0, 1] value range.
 
-        :return: Tensor of normals as unit vectors sized [N, C=3, H, W].
+        :return: Tensor of normals as unit vectors sized [N, C=3, H, W] or [C=3, H, W].
         :rtype: torch.tensor
         """
-        if from_image: angle_map = angle_map * 2 - 1
+        ndim = len(angle_map.size())
+        assert ndim == 3 or ndim == 4, cls.err_size
+        nobatch = ndim == 3
+        if nobatch: angle_map = angle_map.unsqueeze(0)
+        assert angle_map.size(1), "angle map must have 2 channels"
+        if from_rescaled: angle_map = angle_map * 2 - 1
 
         # Extract the z-angle and y-angle tensors
-        z_angle_tensor = (angle_map[:, 0:1, :, :]) * cls.halfpi
-        y_angle_tensor = (angle_map[:, 1:2, :, :]) * cls.halfpi
+        z_angle_tensor = (angle_map[:, 0:1, :, :]) * (torch.pi * 0.5)
+        y_angle_tensor = (angle_map[:, 1:2, :, :]) * torch.pi
         
         # Calculate the x, y, and z components of the normal map
         x_tensor = torch.sin(z_angle_tensor) * torch.sin(y_angle_tensor)
@@ -84,14 +90,14 @@ class Geometry:
         # Stack the components into a single tensor and normalize the values
         normal_map_tensor = torch.cat((x_tensor, y_tensor, z_tensor), dim=1)
         if recompute_z: normal_map_tensor = cls.__recompute_normal_z(normal_map_tensor, is_image=False)
-        if normalize_t: normal_map_tensor = cls.__normalize_vec(normal_map_tensor)
-        
-        return normal_map_tensor * 0.5 + 0.5 if to_image else normal_map_tensor
+        if normalize: normal_map_tensor = cls.__normalize_vec(normal_map_tensor)
+        out = normal_map_tensor * 0.5 + 0.5 if to_rescaled else normal_map_tensor
+        return out.squeeze(0) if nobatch else out
         
     @classmethod
     def blend_normals(cls, normals_base:torch.Tensor, normals_detail:torch.Tensor, eps:float=1e-8):
         """
-        Blend two normal maps with reoriented normal map algorithm
+        Blend two normal maps with reoriented normal map algorithm.
         
         :param torch.tensor normals_base: base normals tensor sized [N, C=3, H, W] as unit vectors 
             of surface normals (not 0-1 range RGB)
@@ -127,7 +133,7 @@ class Geometry:
     @classmethod
     def height_to_normals(cls, height_map:torch.Tensor, eps:float=1e-4) -> torch.Tensor:
         """
-        Compute normals form height.
+        Compute tangent-space normals form height.
 
         :param torch.tensor height_map: height map tensor sized [N, C=1, H, W] in 0-1 range
         :param float eps: epsilon
@@ -360,7 +366,7 @@ class Geometry:
     @classmethod
     def __norm_to_dir(cls, normal_map:torch.Tensor, normalize_ip:bool=False):
         """
-        Convert image tensor of normal vectors to flat tensor of direction vectors
+        Convert [C, H, W] sized image tensor of normal vectors to [N, C] tensor of direction vectors.
 
         :param torch.tensor normal_map: normal map tensor sized [C=3, H, W] as unit vectors
         :param bool normalize_ip: normalize input
@@ -397,7 +403,7 @@ class Geometry:
     @classmethod
     def __normalize_vec(cls, normal_map:torch.Tensor, is_image:bool=False) -> torch.Tensor:
         """
-        Normalize a unit vector (i.e. surface normal)
+        Normalize vec3 to a unit vector.
 
         :param torch.tensor normal_map: tensor of normal vectors sized [N, C=3, H, W]
         :param bool is_image: tensor is normal map RGB image in 0-1 range
