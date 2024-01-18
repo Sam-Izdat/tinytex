@@ -4,8 +4,8 @@ import numpy as np
 
 from .util import *
 
-class Resampler:
-    
+class Resampling:
+
     err_size = "tensor must be sized [C, H, W] or [N, C, H, W]"
 
     @classmethod
@@ -30,7 +30,7 @@ class Resampler:
         tiled_tensor = tiled_tensor[..., :new_H, :new_W]
         return tiled_tensor.squeeze(0) if nobatch else tiled_tensor
 
-    @classmethod:
+    @classmethod
     def tile_n(cls, im:torch.Tensor, repeat_h:int, repeat_w:int):
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size

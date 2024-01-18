@@ -5,19 +5,19 @@ from scipy.spatial import cKDTree
 from tinycio import MonoImage
 
 from .util import *
+from .interpolation import Smoothstep
 
 class Noise:
 
-    #TODO
-    #https://thebookofshaders.com/13/
+    err_hw_pot = "height and width must be power-of-two"
+    err_density_zero = "density cannot be zero"
 
-    @staticmethod
-    def __interpolant_quintic(t):
-        return t*t*t*(t*(t*6 - 15) + 10)
+    #TODO: value noise
+    #https://iquilezles.org/articles/gradientnoise/
+    # simplex noise
+    #https://www.shadertoy.com/view/Msf3WH
 
-    @staticmethod
-    def __interpolant_smoothstep(t):
-        return t*t*(3-2*t)
+
 
     # From: https://github.com/pvigier/perlin-numpy/blob/master/perlin_numpy/perlin2d.py
     # Copyright (c) 2019 Pierre Vigier
@@ -40,7 +40,11 @@ class Noise:
     # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     # SOFTWARE.
     @classmethod
-    def __perlin_np(cls, shape, res, tileable=(True, True), interpolant='quintic'):
+    def __perlin_np(cls, 
+        shape:tuple, 
+        res:tuple, 
+        tileable:tuple=(True, True), 
+        interpolant:str='quintic_polynomial'):
         """Generate a 2D numpy array of perlin noise.
 
         Args:
@@ -60,13 +64,6 @@ class Noise:
         Raises:
             ValueError: If shape is not a multiple of res.
         """
-
-        if interpolant.strip().lower() == 'quintic':
-            interpolant = cls.__interpolant_quintic
-        elif interpolant.strip().lower() == 'smoothstep':
-            interpolant = cls.__interpolant_smoothstep
-        else:
-            raise Exception('unrecognized interpolant')
 
         delta = (res[0] / shape[0], res[1] / shape[1])
         d = (shape[0] // res[0], shape[1] // res[1])
@@ -90,15 +87,19 @@ class Noise:
         n01 = np.sum(np.dstack((grid[:,:,0]  , grid[:,:,1]-1)) * g01, 2)
         n11 = np.sum(np.dstack((grid[:,:,0]-1, grid[:,:,1]-1)) * g11, 2)
         # Interpolation
-        t = interpolant(grid)
+        t = Smoothstep.interpolate(interpolant, grid)
         n0 = n00*(1-t[:,:,0]) + t[:,:,0]*n10
         n1 = n01*(1-t[:,:,0]) + t[:,:,0]*n11
         return np.sqrt(2)*((1-t[:,:,1])*n0 + t[:,:,1]*n1)       
 
     @classmethod
-    def perlin(cls, shape, density=5, tileable=(True, True), interpolant='quintic'):
-        assert density > 0., "density cannot be 0"
-        assert is_pot(shape[0]) and is_pot(shape[1]), "height and width must be power-of-two"
+    def perlin(cls, 
+        shape:tuple, 
+        density:float=5., 
+        tileable:tuple=(True, True), 
+        interpolant:str='quintic_polynomial') -> torch.Tensor:
+        assert density > 0., cls.err_density_zero
+        assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         res = (
             find_closest_divisor(shape[0], np.ceil(shape[0]/256.*density)), 
             find_closest_divisor(shape[1], np.ceil(shape[1]/256.*density)))
@@ -127,10 +128,14 @@ class Noise:
     # SOFTWARE.
     @classmethod
     def __fractal_np(cls, 
-            shape, res, octaves=1, persistence=0.5,
-            lacunarity=2, tileable=(True, True),
-            interpolant='quintic'
-    ):
+            shape:tuple, 
+            res:tuple, 
+            octaves:int=1, 
+            persistence:float=0.5,
+            lacunarity:int=2, 
+            tileable:tuple=(True, True),
+            interpolant:str='quintic_polynomial', 
+            turbulence:bool=False) -> np.ndarray:
         """Generate a 2D numpy array of fractal noise.
 
         Args:
@@ -159,32 +164,60 @@ class Noise:
         frequency = 1
         amplitude = 1
         for _ in range(octaves):
-            noise += amplitude * cls.__perlin_np(
-                shape, (min(frequency*res[0], shape[0]), min(frequency*res[1], shape[1])), tileable, interpolant
+            perlin = cls.__perlin_np(
+                shape, 
+                (min(frequency*res[0], shape[0]), min(frequency*res[1], shape[1])), 
+                tileable, 
+                interpolant
             )
+            noise += amplitude * (np.abs(perlin) if turbulence else perlin)            
             frequency *= lacunarity
             amplitude *= persistence
         return noise
 
     @classmethod
     def fractal(cls, 
-            shape, density=5., octaves=5, persistence=0.5,
-            lacunarity=2, tileable=(True, True),
-            interpolant='quintic'
-    ):
-        assert density > 0., "density cannot be 0"
-        assert is_pot(shape[0]) and is_pot(shape[1]), "height and width must be power-of-two"
+            shape:tuple, 
+            density:float=5., 
+            octaves:int=5, 
+            persistence:float=0.5,
+            lacunarity:int=2, 
+            tileable:tuple=(True, True),
+            interpolant:str='quintic_polynomial') -> torch.Tensor:
+        assert density > 0., cls.err_density_zero
+        assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         res = (
             find_closest_divisor(shape[0], np.ceil(shape[0]/256.*density)), 
             find_closest_divisor(shape[1], np.ceil(shape[1]/256.*density)))
-        out = cls.__fractal_np(shape, res, octaves, persistence, lacunarity, tileable, interpolant)
+        out = cls.__fractal_np(shape, res, octaves, persistence, lacunarity, tileable, interpolant, turbulence=False)
         return torch.from_numpy(np.expand_dims(out, 0).astype(np.float32)*0.5+0.5).clamp(0., 1.)
 
-    #TODO: turbulence
-    #TODO: ridge
-
     @classmethod
-    def __worley_np(cls, shape, density, tileable=(True, True)):
+    def turbulence(cls, 
+            shape:tuple, 
+            density:float=5., 
+            octaves:int=5, 
+            persistence:float=0.5,
+            lacunarity:int=2, 
+            tileable:tuple=(True, True),
+            interpolant:str='quintic_polynomial', 
+            ridge:bool=False) -> torch.Tensor:
+        assert density > 0., cls.err_density_zero
+        assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
+        res = (
+            find_closest_divisor(shape[0], np.ceil(shape[0]/256.*density)), 
+            find_closest_divisor(shape[1], np.ceil(shape[1]/256.*density)))
+        out = cls.__fractal_np(shape, res, octaves, persistence, lacunarity, tileable, interpolant, turbulence=True)
+        if ridge:
+            out = 1. - out
+            out = out ** 2
+        return torch.from_numpy(np.expand_dims(out, 0).astype(np.float32)).clamp(0., 1.)
+    
+    @classmethod
+    def __worley_np(cls, 
+        shape:tuple, 
+        density:float, 
+        tileable:tuple=(True, True)) -> np.ndarray:
         height, width = shape[0], shape[1]
         points = []
         base = [[np.random.randint(0, height), np.random.randint(0, width)] for _ in range(density)]
@@ -204,9 +237,13 @@ class Noise:
         return distances[height:height*2, width:width*2]
 
     @classmethod
-    def worley(cls, shape, density=5, intensity=1, tileable=(True, True)):
-        assert density > 0., "density must be above zero"
-        assert is_pot(shape[0]) and is_pot(shape[1]), "height and width must be power-of-two"
+    def worley(cls, 
+        shape:tuple, 
+        density:float=5., 
+        intensity:float=1., 
+        tileable:tuple=(True, True)) -> torch.Tensor:
+        assert density > 0., cls.err_density_zero
+        assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         density *= 10
         intensity = 0.01 * intensity
         out = cls.__worley_np(shape, density, tileable)

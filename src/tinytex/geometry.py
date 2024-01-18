@@ -5,8 +5,11 @@ import torch.nn.functional as F
 from .util import *
 
 class Geometry:
+
+    halfpi = 1.57079632679
+
     @classmethod
-    def normals_to_spherical_coords(cls,
+    def normals_to_angles(cls,
         normal_map:torch.Tensor, 
         recompute_z:bool=False, 
         normalize_t:bool=False, 
@@ -28,7 +31,7 @@ class Geometry:
         """
 
         # Convert the RGB image tensor to a tensor with values in the range [-1, 1]
-        halfpi = 1.57079632679
+        
         if from_image: normal_map = normal_map * 2 - 1   
 
         # Normalize the vector
@@ -41,13 +44,13 @@ class Geometry:
         z = normal_map[:, 2:3, :, :]
 
         # Calculate angles and normalize 0-1 range
-        atan2_xz = torch.atan2(x, z)/halfpi
-        acos_y = torch.acos(y)/halfpi
+        atan2_xz = torch.atan2(x, z)/cls.halfpi
+        acos_y = torch.acos(y)/cls.halfpi
         angles = torch.cat([atan2_xz, acos_y], dim=1)
         return angles * 0.5 + 0.5 if to_image else angles
 
     @classmethod
-    def spherical_coords_to_normals(cls, 
+    def angles_to_normals(cls, 
         angle_map:torch.Tensor, 
         recompute_z:bool=False, 
         normalize_t:bool=False, 
@@ -67,12 +70,11 @@ class Geometry:
         :return: Tensor of normals as unit vectors sized [N, C=3, H, W].
         :rtype: torch.tensor
         """
-        halfpi = 1.57079632679
         if from_image: angle_map = angle_map * 2 - 1
 
         # Extract the z-angle and y-angle tensors
-        z_angle_tensor = (angle_map[:, 0:1, :, :]) * halfpi
-        y_angle_tensor = (angle_map[:, 1:2, :, :]) * halfpi
+        z_angle_tensor = (angle_map[:, 0:1, :, :]) * cls.halfpi
+        y_angle_tensor = (angle_map[:, 1:2, :, :]) * cls.halfpi
         
         # Calculate the x, y, and z components of the normal map
         x_tensor = torch.sin(z_angle_tensor) * torch.sin(y_angle_tensor)
@@ -123,7 +125,7 @@ class Geometry:
         return r
 
     @classmethod
-    def compute_normals(cls, height_map:torch.Tensor, eps:float=1e-4) -> torch.Tensor:
+    def height_to_normals(cls, height_map:torch.Tensor, eps:float=1e-4) -> torch.Tensor:
         """
         Compute normals form height.
 
@@ -132,8 +134,10 @@ class Geometry:
         :return: normals tensor sized [N, C=3, H, W] as unit vectors of surface normals (not 0-1 RGB)
         :rtype: torch.tensor
         """
-        if len(height_map.size()) == 3: height_map = height_map.unsqueeze(0)
-        elif len(height_map.size()) != 4: raise ValueError
+        if len(height_map.size()) == 3: height_map.unsqueeze(0)
+        assert len(height_map.size()) == 4, "height map tensor must be sized [C, H, W] or [N, C, H, W]"
+        assert height_map.size(1) == 1, "height map tensor must have 1 channel"
+        height_map = 1. - height_map
         device = height_map.device
         N = height_map.size(0)
         # height = 1 - height
@@ -152,7 +156,7 @@ class Geometry:
 
 
     @classmethod
-    def compute_displacement(cls, 
+    def normals_to_height(cls, 
         normal_map:torch.Tensor, 
         self_tiling:bool=False, 
         eps:float=torch.finfo(torch.float32).eps) -> torch.Tensor:
@@ -166,7 +170,8 @@ class Geometry:
         :rtype: torch.tensor
         """
         if len(normal_map.size()) == 3: normal_map = normal_map.unsqueeze(0)
-        elif len(normal_map.size()) != 4: raise ValueError
+        assert len(normal_map.size()) == 4, "normal map tensor must be sized [C, H, W] or [N, C, H, W]"
+        assert normal_map.size(1) == 3, "normal map tensor must have 3 channels"
         device = normal_map.device
         N, _, H, W = normal_map.size()
         res_disp, res_scale = [], []
@@ -209,10 +214,10 @@ class Geometry:
 
         res_disp = torch.cat(res_disp, dim=0)
         res_scale = torch.cat(res_scale, dim=0)
-        return res_disp, res_scale
+        return res_disp, res_scale / 10.
 
     @classmethod
-    def compute_curvature(cls, height_map, blur_kernel_size=(1. / 128.), blur_iter=1):
+    def height_to_curvature(cls, height_map, blur_kernel_size=(1. / 128.), blur_iter=1):
         """
         Compute mean curvature map from height map
 
@@ -301,7 +306,7 @@ class Geometry:
             for i in range(N):
                 hm, nm, hs = height_map[i], normal_map[i], height_scale[i]
                 hm = hm * 2 * hs
-                pos_nc = height_to_pos(hm, device=device)
+                pos_nc = cls.__height_to_pos(hm, device=device)
                 dir_nc = cls.__norm_to_dir(nm, normalize_ip=True)
                 sample = torch.zeros_like(dir_nc)
                 ao, bn = torch.zeros_like(hm), torch.zeros_like(nm)
@@ -369,6 +374,25 @@ class Geometry:
             nt = nt.view(C, -1).T
             if normalize_ip: nt = nt / torch.linalg.vector_norm(nt, dim=1, keepdim=True)    
         return nt
+
+    def __height_to_pos(height_map:torch.Tensor, device=torch.device('cpu')) -> torch.Tensor:
+        """
+        Convert image tensor of height values to flat tensor of position vectors
+
+        :param torch.tensor height_map: height map tensor sized [C=1, H, W] in 0-1 range
+        :param device: device for tensors (i.e. cpu or cuda)
+        :return: position tensor sized [H*W, C=3] 
+        :rtype: torch.tensor
+        """
+        with torch.no_grad():
+            C, H, W = height_map.shape
+            x = torch.linspace(-1, 1, W, device=device)
+            y = torch.linspace(-1, 1, H, device=device)
+            xx, yy = torch.meshgrid(x, y, indexing='xy')
+            z = torch.ones_like(xx).to(device) * height_map.squeeze()
+            pos_tensor = torch.stack([xx, yy, z, height_map.squeeze()], dim=0)
+            pos_tensor = pos_tensor.reshape(4, -1).T[:, :3]
+        return pos_tensor
 
     @classmethod
     def __normalize_vec(cls, normal_map:torch.Tensor, is_image:bool=False) -> torch.Tensor:

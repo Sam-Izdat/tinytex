@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import random
 
-def find_closest_divisor(n, m): 
+def find_closest_divisor(n:int, m:int) -> int: 
     """
     Find the divisor of n closest to m
 
@@ -29,16 +29,39 @@ def next_pot(x:int) -> int:
     """
     return 2 ** np.ceil(np.log2(x))
 
-def smooth_step(edge0, edge1, x):
+# https://kaba.hilvi.org/pastel-1.6.0/pastel/math/interpolation/smoothstep.h.htm
+
+# cubic
+def smoothstep_cubic(edge0:float, edge1:float, x:torch.Tensor) -> torch.Tensor:
     """
-    Hermite interpolation.
+    Cubic/Hermite interpolation.
 
     :return: Interpolated value.
     """
     x = torch.clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
     return x * x * (3 - 2 * x)
 
-def seed_everything(seed: int):
+# quartic
+def smoothstep_quartic(edge0:float, edge1:float, x:torch.Tensor) -> torch.Tensor:
+    """
+    Quartic interpolation.
+
+    :return: Interpolated value.
+    """
+    x = torch.clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
+    return x * x * (2 - x * x)
+
+# quintic
+def smoothstep_quintic(edge0:float, edge1:float, x:torch.Tensor) -> torch.Tensor:
+    """
+    Quintic interpolation.
+
+    :return: Interpolated value.
+    """
+    x = torch.clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
+    return x * x * x * (x * (x * 6 - 15) + 10)
+
+def seed_everything(seed: int) -> bool:
     """
     Seed Python, NumPy and PyTorch RNGs.
 

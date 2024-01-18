@@ -7,17 +7,11 @@ import torch
 
 from .util import *
 from .resampler import Resampler
-
-# from tinycio import fsio
-
-# Load image
-# im = imageio.imread("../../out/beef.png")#[...,0:1]
-
-# im = fsio.load_image("../../out/beef.png").permute(1,2,0).numpy()
+from .interpolation import Smoothstep
 
 class SDF:
     @classmethod
-    def from_image(cls, im:torch.Tensor, tiling:bool=True, length_factor:float=0.1, threshold=0.) -> torch.Tensor:
+    def compute(cls, im:torch.Tensor, tiling:bool=True, length_factor:float=0.1, threshold=0.) -> torch.Tensor:
         H, W = im.shape[1:]
         if threshold > 0.: im = (im > 0.5)
         if tiling: im = Resampler.tile(im, (H*3, W*3))
@@ -35,13 +29,17 @@ class SDF:
         shape=tuple, 
         edge0:float=0.496, 
         edge1:float=0.498, 
-        val0:float=0., 
-        val1:float=1.,
+        value0:float=0., 
+        value1:float=1.,
+        interpolant='quintic_polynomial',
         mode:str='bilinear'):
         H, W = shape[0], shape[1]
         sdf = Resampler.resize(sdf, (H, W), mode=mode)
         ones = torch.ones_like(sdf)
-        render = torch.lerp(ones * val0, ones * val1, smooth_step(edge0, edge1, sdf))
+
+        interp = Smoothstep.apply(interpolant, edge0, edge1, sdf)
+
+        render = torch.lerp(ones * value0, ones * value1, interp)
         return render
 
 # # print(im.shape)

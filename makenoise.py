@@ -12,18 +12,34 @@ from tinytex import *
 # Assuming textures is a list of TextureRect objects
 
 
+foo = fsio.load_image('out/a.png')[0:1,...]
+# bar, bar_scale  = Geometry.normals_to_height(foo.unsqueeze(0) * 2. - 1., self_tiling=True)
+# print(bar.size())
+# exit()
+
+noise1 = Noise.fractal((512,512))
+# noise1 = SDF.from_image(1. - foo)
+noise1 = SDF.render(noise1, (512, 512), 0.48, 0.52, 0., 1.,mode='bicubic')
+baz = Geometry.height_to_normals(noise1.unsqueeze(0).clamp(0.,1.) * 1. )
+# fsio.save_image(bar.squeeze(0), 'out/height.png')
+
+fsio.save_image(baz.squeeze(0)*0.5+0.5, 'out/normals_from_height.png')
 
 
 # foo = fsio.load_image('out/a_small.png')
 # foo = Noise.worley((128, 128), density=15)*6
-foo = Noise.fractal((128, 128))
+foo = Noise.turbulence((128, 128), density=5)
+# fsio.save_image(foo, 'out/turbulence.png')
+# exit()
 # print(foo.size(), foo.min(), foo.max())
 # sdf = SDF.from_image(foo)
 sdf = foo
 print(sdf.shape)
-fsio.save_image(sdf, 'out/sdf_xxxx.png')
-# fsio.save_image(SDF.render(sdf, (512, 512), 0.499, 0.501, 0., 1.), 'out/sdf_render.png')
-fsio.save_image(SDF.render(sdf, (512, 512), 0.399, 0.601, 0., 1.), 'out/sdf_render.png')
+fsio.save_image(sdf, 'out/sdf_xxxx.png', graphics_format=fsio.GraphicsFormat.UINT16)
+fsio.save_image(sdf, 'out/sdf_xxxx.exr')
+sdf = fsio.load_image('out/sdf_xxxx.png', graphics_format=fsio.GraphicsFormat.UINT16)
+# fsio.save_image(SDF.render(sdf, (512, 512), 0.499, 0.501, 0., 1.,mode='bicubic'), 'out/sdf_render.png')
+fsio.save_image(SDF.render(sdf, (512, 512), 0.399, 0.501, 0., 1.,mode='bicubic'), 'out/sdf_render.png')
 exit()
 
 # textures = []
@@ -81,7 +97,7 @@ exit()
 
 
 ted = fsio.load_image('out/atlas/zzzted.png')
-ted = Resampler.pad_to_next_pot(ted)
+ted = Resampling.pad_to_next_pot(ted)
 fsio.save_image(ted, 'out/ted_padded.png')
 exit()
 
@@ -102,9 +118,9 @@ exit()
 seed_everything(0)
 height, width = 256, 256
 # foo = Noise.worley((height, width), density=5, intensity=1)
-foo = Noise.fractal((height, width), density=6, tileable=(True,True), octaves=5, persistence=0.5, lacunarity=2, interpolant='quintic')
+foo = Noise.fractal((height, width), density=6, tileable=(True,True), octaves=5, persistence=0.5, lacunarity=2, interpolant='quintic_polynomial')
 foo = foo.roll([70, 70], dims=[1,2])
-foo = Resampler.tile(foo, (512,512))
+foo = Resampling.tile(foo, (512,512))
 bar, r, c = Tiler.split(foo, 256)
 # print(bar.size())
 # bar = Tiler.blend(bar, r, c)
@@ -120,8 +136,8 @@ exit()
 
 
 
-noise = Noise.fractal((height, width), density=6, tileable=(True,True), octaves=5, persistence=0.5, lacunarity=2, interpolant='quintic')
+noise = Noise.fractal((height, width), density=6, tileable=(True,True), octaves=5, persistence=0.5, lacunarity=2, interpolant='quintic_polynomial')
 # noise = Noise.perlin((height, width), density=5, tileable=(True,True))
-# noise = Resampler.tile(noise, (700,700))
-noise = Resampler.tile_to_square(noise, 1024)
+# noise = Resampling.tile(noise, (700,700))
+noise = Resampling.tile_to_square(noise, 1024)
 fsio.save_image(noise, 'out/rtex.png')
