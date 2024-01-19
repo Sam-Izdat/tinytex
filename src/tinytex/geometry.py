@@ -13,16 +13,14 @@ class Geometry:
         normal_map:torch.Tensor, 
         recompute_z:bool=False, 
         normalize:bool=False, 
-        from_rescaled:bool=False, 
-        to_rescaled:bool=False):
+        rescaled:bool=False):
         """
         Convert tangent-space normals vectors to scaled spherical coordinates.
 
         :param torch.tensor normal_map: Input normal map sized [N, C=3, H, W] or [C=3, H, W].
         :param bool recompute_z: Discard and recompute normals' z-channel before conversion.
         :param bool normalize: Normalize vectors before conversion.
-        :param bool from_rescaled: Accept unit vector tensor in [0, 1] value range.
-        :param bool to_rescaled: Return unit vector tensor in [0, 1] value range.
+        :param bool rescaled: Input and returned tensors should be in [0, 1] value range.
 
         :return: Normalized z-axis angle and y-axis angle tensor sized [N, C=2, H, W] or [C=2, H, W].
         :rtype: torch.tensor
@@ -34,11 +32,11 @@ class Geometry:
         assert normal_map.size(1), "normal map must have 3 channels"
         # Convert the RGB image tensor to a tensor with values in the range [-1, 1]
         
-        if from_rescaled: normal_map = normal_map * 2. - 1.
+        if rescaled: normal_map = normal_map * 2. - 1.
 
         # Normalize the vector
-        if recompute_z: normal_map = cls.__recompute_normal_z(normal_map, is_image=False)
-        if normalize: normal_map = cls.__normalize_vec(normal_map)
+        if recompute_z: normal_map = cls.__recompute_normal_z(normal_map, rescaled=False)
+        if normalize: normal_map = cls.__normalize_vec(normal_map, rescaled=False)
 
         # Extract the red, green, and blue channels
         x = normal_map[:, 0:1, :, :]
@@ -49,7 +47,7 @@ class Geometry:
         atan2_xz = torch.atan2(x, z) / (torch.pi * 0.5)
         acos_y = torch.acos(y) / torch.pi
         angles = torch.cat([atan2_xz, acos_y], dim=1)
-        out = angles * 0.5 + 0.5 if to_rescaled else angles
+        out = angles * 0.5 + 0.5 if rescaled else angles
         return out.squeeze(0) if nobatch else out
 
     @classmethod
@@ -57,16 +55,14 @@ class Geometry:
         angle_map:torch.Tensor, 
         recompute_z:bool=False, 
         normalize:bool=False, 
-        from_rescaled:bool=False, 
-        to_rescaled:bool=False) -> torch.Tensor:
+        rescaled:bool=False) -> torch.Tensor:
         """
         Convert scaled spherical coordinates to tangent-space normal vectors.
 
         :param torch.tensor angle_map: Normalized spherical coordinates tensor sized [N, C=2, H, W] or [C=2, H, W].
         :param bool recompute_z: Discard and recompute normals' z-channel after conversion.
         :param bool normalize: Normalize vectors after conversion.
-        :param bool from_rescaled: Accept unit vector tensor in [0, 1] value range.
-        :param bool to_rescaled: Return unit vector tensor in [0, 1] value range.
+        :param bool rescaled: Input and returned tensors should be in [0, 1] value range.
 
         :return: Tensor of normals as unit vectors sized [N, C=3, H, W] or [C=3, H, W].
         :rtype: torch.tensor
@@ -76,7 +72,7 @@ class Geometry:
         nobatch = ndim == 3
         if nobatch: angle_map = angle_map.unsqueeze(0)
         assert angle_map.size(1), "angle map must have 2 channels"
-        if from_rescaled: angle_map = angle_map * 2. - 1.
+        if rescaled: angle_map = angle_map * 2. - 1.
 
         # Extract the z-angle and y-angle tensors
         z_angle_tensor = (angle_map[:, 0:1, :, :]) * (torch.pi * 0.5)
@@ -89,17 +85,16 @@ class Geometry:
         
         # Stack the components into a single tensor and normalize the values
         normal_map_tensor = torch.cat((x_tensor, y_tensor, z_tensor), dim=1)
-        if recompute_z: normal_map_tensor = cls.__recompute_normal_z(normal_map_tensor, is_image=False)
-        if normalize: normal_map_tensor = cls.__normalize_vec(normal_map_tensor)
-        out = normal_map_tensor * 0.5 + 0.5 if to_rescaled else normal_map_tensor
+        if recompute_z: normal_map_tensor = cls.__recompute_normal_z(normal_map_tensor, rescaled=False)
+        if normalize: normal_map_tensor = cls.__normalize_vec(normal_map_tensor, rescaled=False)
+        out = normal_map_tensor * 0.5 + 0.5 if rescaled else normal_map_tensor
         return out.squeeze(0) if nobatch else out
         
     @classmethod
     def blend_normals(cls, 
         normals_base:torch.Tensor, 
         normals_detail:torch.Tensor, 
-        from_rescaled:bool=False,
-        to_rescaled:bool=False,
+        rescaled:bool=False,
         eps:float=1e-8):
         """
         Blend two normal maps with reoriented normal map algorithm.
@@ -108,8 +103,7 @@ class Geometry:
             as unit vectors of surface normals
         :param torch.tensor normals_detail: Detail normals tensor sized [N, C=3, H, W] or [C=3, H, W] 
             as unit vectors of surface normals
-        :param bool from_rescaled: Accept unit vector tensors in [0, 1] value range.
-        :param bool to_rescaled: Return unit vector tensor in [0, 1] value range.
+        :param bool rescaled: Input and returned unit vector tensors should be in [0, 1] value range.
         :param float eps: epsilon
         :return: blended normals tensor sized [N, C=3, H, W] as unit vectors of surface normals (not 0-1 RGB)
         :rtype: torch.tensor
@@ -122,7 +116,7 @@ class Geometry:
             normals_base = normals_base.unsqueeze(0)
             normals_detail = normals_detail.unsqueeze(0)
         assert normals_base.size(1) == 3 and normals_detail.size(1) == 3, "inputs must have 3 channels"
-        if from_rescaled:
+        if rescaled:
             normals_base = normals_base * 2. - 1.
             normals_detail = normals_detail * 2. - 1.
         n1 = normals_base[:, :3, :, :]
@@ -145,17 +139,17 @@ class Geometry:
         
         # Rotate n2
         r = n2[:,0:1,:,:] * b1 + n2[:,1:2,:,:]*b2 + n2[:,2:3,:,:] * b3
-        if to_rescaled: r = r * 0.5 + 0.5
+        if rescaled: r = r * 0.5 + 0.5
         
         return r.squeeze(0) if nobatch else r
 
     @classmethod
-    def height_to_normals(cls, height_map:torch.Tensor, to_rescaled:bool=False, eps:float=1e-4) -> torch.Tensor:
+    def height_to_normals(cls, height_map:torch.Tensor, rescaled:bool=False, eps:float=1e-4) -> torch.Tensor:
         """
         Compute tangent-space normals form height.
 
         :param torch.tensor height_map: Height map tensor sized [N, C=1, H, W] in 0-1 range
-        :param bool to_rescaled: Return unit vector tensor in [0, 1] value range.
+        :param bool rescaled: Return unit vector tensor in [0, 1] value range.
         :param float eps: epsilon
         :return: normals tensor sized [N, C=3, H, W] as unit vectors of surface normals (not 0-1 RGB)
         :rtype: torch.tensor
@@ -180,7 +174,7 @@ class Geometry:
             normals.append(n)
 
         normals = torch.cat(normals, dim=0)
-        if to_rescaled: normals = normals * 0.5 + 0.5
+        if rescaled: normals = normals * 0.5 + 0.5
         return normals.squeeze(0) if nobatch else normals
 
 
@@ -188,7 +182,7 @@ class Geometry:
     def normals_to_height(cls, 
         normal_map:torch.Tensor, 
         self_tiling:bool=False, 
-        from_rescaled:bool=False,
+        rescaled:bool=False,
         eps:float=torch.finfo(torch.float32).eps) -> (torch.Tensor, torch.Tensor):
         """
         Compute height from normals - Frankot-Chellappa algorithm.
@@ -196,7 +190,7 @@ class Geometry:
         :param normal_map: normal_map tensor sized [N, C=3, H, W] as unit vectors 
             of surface normals (not 0-1 range RGB)
         :param self_tiling: treat surface as self-tiling
-        :param from_rescaled: Accept unit vector tensor in [0, 1] value range.
+        :param rescaled: Accept unit vector tensor in [0, 1] value range.
         :return: height tensor sized [N, C=1, H, W] or [C=1, H, W] in [0, 1] range 
             and height scale tensor sized [N, C=1] or [C=1] in [0, inf] range
         """
@@ -205,6 +199,7 @@ class Geometry:
         nobatch = ndim == 3
         if nobatch: normal_map = normal_map.unsqueeze(0)
         assert normal_map.size(1) == 3, "normal map tensor must have 3 channels"
+        if rescaled: normal_map = normal_map * 2. - 1.
         device = normal_map.device
         N, _, H, W = normal_map.size()
         res_disp, res_scale = [], []
@@ -324,8 +319,7 @@ class Geometry:
         height_scale:Union[torch.Tensor,float], 
         radius:float=0.08, 
         num_samples:int=512,
-        from_rescaled:bool=False,
-        to_rescaled:bool=False) -> (torch.Tensor, torch.Tensor):
+        rescaled:bool=False) -> (torch.Tensor, torch.Tensor):
         """
         Compute ambient occlusion and bent normals.
 
@@ -335,8 +329,7 @@ class Geometry:
         :param height_scale: height scale as [N, C=1] tensor or float
         :param radius: occlusion radius
         :param num_samples: number of occlusion samples per pixel
-        :param from_rescaled: Accept unit vector tensor in [0, 1] value range.
-        :param to_rescaled: Return unit vector tensor in [0, 1] value range.
+        :param rescaled: Input and returned unit vector tensors should be in [0, 1] value range.
         :return: ambient occlusion tensor sized [N, C=1, H, W] and bent normals tensor sized [N, C=3, H, W]
         """
         assert height_map.size() == normal_map.size(), "height map and normal map tensors must have same number of dimensions"
@@ -350,7 +343,7 @@ class Geometry:
                 torch.Tensor(height_scale).unsqueeze(0)
         assert height_map.size(1) == 1, "height map tensor must have 1 channel"
         assert normal_map.size(1) == 3, "normal map tensor must have 1 channel"
-        if from_rescaled: normal_map = normal_map * 2. - 1.
+        if rescaled: normal_map = normal_map * 2. - 1.
 
         if len(height_map.size()) == 3: height_map = height_map.unsqueeze(0)
         elif len(height_map.size()) != 4: raise ValueError
@@ -396,7 +389,7 @@ class Geometry:
         if nobatch:
             res_ao = res_ao.squeeze(0)
             res_bn = res_bn.squeeze(0)
-        if to_rescaled:
+        if rescaled:
             res_bn = res_bn * 0.5 + 0.5
         return res_ao, res_bn
 
@@ -459,35 +452,35 @@ class Geometry:
         return pos_tensor
 
     @classmethod
-    def __normalize_vec(cls, normal_map:torch.Tensor, is_image:bool=False) -> torch.Tensor:
+    def __normalize_vec(cls, normal_map:torch.Tensor, rescaled:bool=False) -> torch.Tensor:
         """
         Normalize vec3 to a unit vector.
 
         :param torch.tensor normal_map: tensor of normal vectors sized [N, C=3, H, W]
-        :param bool is_image: tensor is normal map RGB image in 0-1 range
+        :param bool rescaled: tensor is normal map RGB image in [0, 1] range
         :return: normalized normals image tensor sized [N, C=3, H, W],
-            either as unit vectors or in RGB 0-1 range, depending on is_image param
+            either as unit vectors or in RGB 0-1 range, depending on rescaled param
         :rtype: torch.tensor
         """
-        if is_image: normal_map = normal_map * 2. - 1.
+        if rescaled: normal_map = normal_map * 2. - 1.
         # normal_map = normal_map / torch.sqrt(torch.sum(normal_map ** 2, dim=1, keepdim=True))
         vec = F.normalize(normal_map)
-        if is_image: normal_map = normal_map * 0.5 + 0.5
+        if rescaled: normal_map = normal_map * 0.5 + 0.5
         return normal_map
 
     @classmethod
-    def __recompute_normal_z(cls, normal_map:torch.Tensor, is_image:bool=False) -> torch.Tensor:
+    def __recompute_normal_z(cls, normal_map:torch.Tensor, rescaled:bool=False) -> torch.Tensor:
         """
         Discard and rompute the z-vector for a tangent-space normal map
 
         :param torch.tensor normal_map: tensor of normal vectors sized [N, C=3, H, W]
-        :param bool is_image: tensor is normal map RGB image in 0-1 range
+        :param bool rescaled: tensor is normal map RGB image in [0, 1] range
         :return: normals image tensor with reconstructed z-channel sized [N, C=3, H, W], 
-            either as unit vectors or in RGB 0-1 range, depending on is_image param
+            either as unit vectors or in RGB 0-1 range, depending on rescaled param
         :rtype: torch.tensor
         """
         # Extract the x and y channels from the normal map
-        if is_image: normal_map = normal_map * 2. - 1.
+        if rescaled: normal_map = normal_map * 2. - 1.
         x = normal_map[:, 0, :, :]
         y = normal_map[:, 1, :, :]
 
@@ -496,5 +489,5 @@ class Geometry:
 
         # Return the reconstructed z channel
         normal_map[:, 2, :, :] = z.squeeze()
-        if is_image: normal_map = normal_map * 0.5 + 0.5
+        if rescaled: normal_map = normal_map * 0.5 + 0.5
         return normal_map
