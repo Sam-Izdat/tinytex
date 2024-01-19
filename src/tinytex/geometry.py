@@ -21,8 +21,8 @@ class Geometry:
         :param torch.tensor normal_map: Input normal map sized [N, C=3, H, W] or [C=3, H, W].
         :param bool recompute_z: Discard and recompute normals' z-channel before conversion.
         :param bool normalize: Normalize vectors before conversion.
-        :param bool from_rescaled: Accept image tensor in [0, 1] value range.
-        :param bool to_rescaled: Return image tensor in [0, 1] value range.
+        :param bool from_rescaled: Accept unit vector tensor in [0, 1] value range.
+        :param bool to_rescaled: Return unit vector tensor in [0, 1] value range.
 
         :return: Normalized z-axis angle and y-axis angle tensor sized [N, C=2, H, W] or [C=2, H, W].
         :rtype: torch.tensor
@@ -34,7 +34,7 @@ class Geometry:
         assert normal_map.size(1), "normal map must have 3 channels"
         # Convert the RGB image tensor to a tensor with values in the range [-1, 1]
         
-        if from_rescaled: normal_map = normal_map * 2 - 1   
+        if from_rescaled: normal_map = normal_map * 2. - 1.
 
         # Normalize the vector
         if recompute_z: normal_map = cls.__recompute_normal_z(normal_map, is_image=False)
@@ -65,8 +65,8 @@ class Geometry:
         :param torch.tensor angle_map: Normalized spherical coordinates tensor sized [N, C=2, H, W] or [C=2, H, W].
         :param bool recompute_z: Discard and recompute normals' z-channel after conversion.
         :param bool normalize: Normalize vectors after conversion.
-        :param bool from_rescaled: Accept image tensor in [0, 1] value range.
-        :param bool to_rescaled: Return image tensor in [0, 1] value range.
+        :param bool from_rescaled: Accept unit vector tensor in [0, 1] value range.
+        :param bool to_rescaled: Return unit vector tensor in [0, 1] value range.
 
         :return: Tensor of normals as unit vectors sized [N, C=3, H, W] or [C=3, H, W].
         :rtype: torch.tensor
@@ -76,7 +76,7 @@ class Geometry:
         nobatch = ndim == 3
         if nobatch: angle_map = angle_map.unsqueeze(0)
         assert angle_map.size(1), "angle map must have 2 channels"
-        if from_rescaled: angle_map = angle_map * 2 - 1
+        if from_rescaled: angle_map = angle_map * 2. - 1.
 
         # Extract the z-angle and y-angle tensors
         z_angle_tensor = (angle_map[:, 0:1, :, :]) * (torch.pi * 0.5)
@@ -95,18 +95,36 @@ class Geometry:
         return out.squeeze(0) if nobatch else out
         
     @classmethod
-    def blend_normals(cls, normals_base:torch.Tensor, normals_detail:torch.Tensor, eps:float=1e-8):
+    def blend_normals(cls, 
+        normals_base:torch.Tensor, 
+        normals_detail:torch.Tensor, 
+        from_rescaled:bool=False,
+        to_rescaled:bool=False,
+        eps:float=1e-8):
         """
         Blend two normal maps with reoriented normal map algorithm.
         
-        :param torch.tensor normals_base: base normals tensor sized [N, C=3, H, W] as unit vectors 
-            of surface normals (not 0-1 range RGB)
-        :param torch.tensor normals_detail: detail normals tensor sized [N, C=3, H, W] as unit vectors 
-            of surface normals (not 0-1 range RGB)
+        :param torch.tensor normals_base: Base normals tensor sized [N, C=3, H, W] or [C=3, H, W] 
+            as unit vectors of surface normals
+        :param torch.tensor normals_detail: Detail normals tensor sized [N, C=3, H, W] or [C=3, H, W] 
+            as unit vectors of surface normals
+        :param bool from_rescaled: Accept unit vector tensors in [0, 1] value range.
+        :param bool to_rescaled: Return unit vector tensor in [0, 1] value range.
         :param float eps: epsilon
         :return: blended normals tensor sized [N, C=3, H, W] as unit vectors of surface normals (not 0-1 RGB)
         :rtype: torch.tensor
         """
+        assert normal_map.size() == normals_detail.size(), "base and detail tensors must have same number of dimensions"
+        ndim = len(normals_base.size())
+        assert ndim == 3 or ndim == 4, cls.err_size
+        nobatch = ndim == 3
+        if nobatch: 
+            normals_base = normals_base.unsqueeze(0)
+            normals_detail = normals_detail.unsqueeze(0)
+        assert normals_base.size(1) == 3 and normals_detail.size(1) == 3, "inputs must have 3 channels"
+        if from_rescaled:
+            normals_base = normals_base * 2. - 1.
+            normals_detail = normals_detail * 2. - 1.
         n1 = normals_base[:, :3, :, :]
         n2 = normals_detail[:, :3, :, :]
         
@@ -127,27 +145,31 @@ class Geometry:
         
         # Rotate n2
         r = n2[:,0:1,:,:] * b1 + n2[:,1:2,:,:]*b2 + n2[:,2:3,:,:] * b3
+        if to_rescaled: r = r * 0.5 + 0.5
         
-        return r
+        return r.squeeze(0) if nobatch else r
 
     @classmethod
-    def height_to_normals(cls, height_map:torch.Tensor, eps:float=1e-4) -> torch.Tensor:
+    def height_to_normals(cls, height_map:torch.Tensor, to_rescaled:bool=False, eps:float=1e-4) -> torch.Tensor:
         """
         Compute tangent-space normals form height.
 
-        :param torch.tensor height_map: height map tensor sized [N, C=1, H, W] in 0-1 range
+        :param torch.tensor height_map: Height map tensor sized [N, C=1, H, W] in 0-1 range
+        :param bool to_rescaled: Return unit vector tensor in [0, 1] value range.
         :param float eps: epsilon
         :return: normals tensor sized [N, C=3, H, W] as unit vectors of surface normals (not 0-1 RGB)
         :rtype: torch.tensor
         """
-        if len(height_map.size()) == 3: height_map.unsqueeze(0)
-        assert len(height_map.size()) == 4, "height map tensor must be sized [C, H, W] or [N, C, H, W]"
+        ndim = len(height_map.size())
+        assert ndim == 3 or ndim == 4, cls.err_size
+        nobatch = ndim == 3
+        if nobatch: height_map = height_map.unsqueeze(0)
         assert height_map.size(1) == 1, "height map tensor must have 1 channel"
         height_map = 1. - height_map
         device = height_map.device
         N = height_map.size(0)
         # height = 1 - height
-        res_height = []
+        normals = []
         for i in range(N):
             dx = (torch.roll(height_map, -1, dims=3) - torch.roll(height_map, 1, dims=3))
             dy = (torch.roll(height_map, 1, dims=2) - torch.roll(height_map, -1, dims=2))
@@ -155,28 +177,33 @@ class Geometry:
             nom = torch.cat([dx, dy, z], dim=1)
             denom = torch.sqrt(torch.sum(nom ** 2, dim=1, keepdim=True) + eps)
             n = nom / denom
-            res_height.append(n)
+            normals.append(n)
 
-        res_height = torch.cat(res_height, dim=0)
-        return res_height
+        normals = torch.cat(normals, dim=0)
+        if to_rescaled: normals = normals * 0.5 + 0.5
+        return normals.squeeze(0) if nobatch else normals
 
 
     @classmethod
     def normals_to_height(cls, 
         normal_map:torch.Tensor, 
         self_tiling:bool=False, 
-        eps:float=torch.finfo(torch.float32).eps) -> torch.Tensor:
+        from_rescaled:bool=False,
+        eps:float=torch.finfo(torch.float32).eps) -> (torch.Tensor, torch.Tensor):
         """
         Compute height from normals - Frankot-Chellappa algorithm.
 
-        :param torch.tensor normal_map: normal_map tensor sized [N, C=3, H, W] as unit vectors 
+        :param normal_map: normal_map tensor sized [N, C=3, H, W] as unit vectors 
             of surface normals (not 0-1 range RGB)
-        :param bool self_tiling: treat surface as self-tiling
-        :return: height tensor sized [N, C=1, H, W] in 0-1 range
-        :rtype: torch.tensor
+        :param self_tiling: treat surface as self-tiling
+        :param from_rescaled: Accept unit vector tensor in [0, 1] value range.
+        :return: height tensor sized [N, C=1, H, W] or [C=1, H, W] in [0, 1] range 
+            and height scale tensor sized [N, C=1] or [C=1] in [0, inf] range
         """
-        if len(normal_map.size()) == 3: normal_map = normal_map.unsqueeze(0)
-        assert len(normal_map.size()) == 4, "normal map tensor must be sized [C, H, W] or [N, C, H, W]"
+        ndim = len(normal_map.size())
+        assert ndim == 3 or ndim == 4, cls.err_size
+        nobatch = ndim == 3
+        if nobatch: normal_map = normal_map.unsqueeze(0)
         assert normal_map.size(1) == 3, "normal map tensor must have 3 channels"
         device = normal_map.device
         N, _, H, W = normal_map.size()
@@ -220,20 +247,25 @@ class Geometry:
 
         res_disp = torch.cat(res_disp, dim=0)
         res_scale = torch.cat(res_scale, dim=0)
+        if nobatch:
+            res_disp = res_disp.squeeze(0)
+            res_scale = res_scale.squeeze(0)
         return res_disp, res_scale / 10.
 
     @classmethod
-    def height_to_curvature(cls, height_map, blur_kernel_size=(1. / 128.), blur_iter=1):
+    def height_to_curvature(cls, 
+        height_map:torch.Tensor, 
+        blur_kernel_size:float=(1. / 128.), 
+        blur_iter:int=1) -> (torch.Tensor, torch.Tensor, torch.Tensor):
         """
         Compute mean curvature map from height map
 
-        :param torch.tensor height_map: height map tensor sized [N, C=1, H, W] in 0-1 range 
-        :param float blur_kernel_size: size of blur kernel
-        :param int blur_iter: blur iterations
+        :param height_map: height map tensor sized [N, C=1, H, W] in 0-1 range 
+        :param blur_kernel_size: size of blur kernel
+        :param blur_iter: blur iterations
         :return: curvature map tensor sized [N, C=1, H, W] in 0-1 range,
             cavity map tensor [N, C=1, H, W] in 0-1 range,
             peak map tensor [N, C=1, H, W] in 0-1 range
-        :rtype: torch.tensor, torch.tensor, torch.tensor
         """
         # see: http://rodolphe-vaillant.fr/entry/33/curvature-of-a-triangle-mesh-definition-and-computation
         if len(height_map.size()) == 3: height_map = height_map.unsqueeze(0)
@@ -286,19 +318,40 @@ class Geometry:
         return torch.cat(res_curv, dim=0), torch.cat(res_cav, dim=0), torch.cat(res_peak, dim=0)
 
     @classmethod
-    def compute_occlusion(cls, height_map, normal_map, height_scale, radius=0.08, num_samples=512):
+    def compute_occlusion(cls, 
+        normal_map:torch.Tensor, 
+        height_map:torch.Tensor, 
+        height_scale:Union[torch.Tensor,float], 
+        radius:float=0.08, 
+        num_samples:int=512,
+        from_rescaled:bool=False,
+        to_rescaled:bool=False) -> (torch.Tensor, torch.Tensor):
         """
         Compute ambient occlusion and bent normals.
 
-        :param torch.tensor height_map: height map tensor sized [N, C=1, H, W] in 0-1 range 
-        :param torch.tensor normal_map: normal map tensor sized [N, C=3, H, W] as unit vectors 
-            of surface normals (not 0-1 range RGB)
-        :param torch.tensor height_scale: height scale as [N, 1] or [N, C=1, H, W] tensor
-        :param float radius: occlusion radius
-        :param int num_samples: number of occlusion samples per pixel
-        :return: ambient occlusion tensor sized [N, C=1, H, W] and bent normals tensor sized [N, C=3, H, W] 
-        :rtype: torch.tensor, torch.tensor
+        :param height_map: height map tensor sized [N, C=1, H, W] or [C=1, H, W] in [0, 1] range 
+        :param normal_map: normal map tensor sized [N, C=3, H, W] or [C=3, H, W] as unit vectors 
+            of surface normals
+        :param height_scale: height scale as [N, C=1] tensor or float
+        :param radius: occlusion radius
+        :param num_samples: number of occlusion samples per pixel
+        :param from_rescaled: Accept unit vector tensor in [0, 1] value range.
+        :param to_rescaled: Return unit vector tensor in [0, 1] value range.
+        :return: ambient occlusion tensor sized [N, C=1, H, W] and bent normals tensor sized [N, C=3, H, W]
         """
+        assert height_map.size() == normal_map.size(), "height map and normal map tensors must have same number of dimensions"
+        ndim = len(height_map.size())
+        assert ndim == 3 or ndim == 4, cls.err_size
+        nobatch = ndim == 3
+        if nobatch: 
+            height_map = height_map.unsqueeze(0)
+            normal_map = normal_map.unsqueeze(0)
+            height_scale = height_scale.unsqueeze(0) if torch.is_tensor(height_scale) else \
+                torch.Tensor(height_scale).unsqueeze(0)
+        assert height_map.size(1) == 1, "height map tensor must have 1 channel"
+        assert normal_map.size(1) == 3, "normal map tensor must have 1 channel"
+        if from_rescaled: normal_map = normal_map * 2. - 1.
+
         if len(height_map.size()) == 3: height_map = height_map.unsqueeze(0)
         elif len(height_map.size()) != 4: raise ValueError
         if len(normal_map.size()) == 3: normal_map = normal_map.unsqueeze(0)
@@ -311,7 +364,7 @@ class Geometry:
         with torch.no_grad():
             for i in range(N):
                 hm, nm, hs = height_map[i], normal_map[i], height_scale[i]
-                hm = hm * 2 * hs
+                hm = hm * 2. * hs
                 pos_nc = cls.__height_to_pos(hm, device=device)
                 dir_nc = cls.__norm_to_dir(nm, normalize_ip=True)
                 sample = torch.zeros_like(dir_nc)
@@ -340,6 +393,11 @@ class Geometry:
                 res_bn.append(bn.unsqueeze(0))
             res_ao = torch.cat(res_ao, dim=0)
             res_bn = torch.cat(res_bn, dim=0)
+        if nobatch:
+            res_ao = res_ao.squeeze(0)
+            res_bn = res_bn.squeeze(0)
+        if to_rescaled:
+            res_bn = res_bn * 0.5 + 0.5
         return res_ao, res_bn
 
     @classmethod
@@ -411,7 +469,7 @@ class Geometry:
             either as unit vectors or in RGB 0-1 range, depending on is_image param
         :rtype: torch.tensor
         """
-        if is_image: normal_map = normal_map * 2 - 1
+        if is_image: normal_map = normal_map * 2. - 1.
         # normal_map = normal_map / torch.sqrt(torch.sum(normal_map ** 2, dim=1, keepdim=True))
         vec = F.normalize(normal_map)
         if is_image: normal_map = normal_map * 0.5 + 0.5
@@ -429,7 +487,7 @@ class Geometry:
         :rtype: torch.tensor
         """
         # Extract the x and y channels from the normal map
-        if is_image: normal_map = normal_map * 2 - 1
+        if is_image: normal_map = normal_map * 2. - 1.
         x = normal_map[:, 0, :, :]
         y = normal_map[:, 1, :, :]
 

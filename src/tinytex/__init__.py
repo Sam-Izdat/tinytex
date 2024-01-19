@@ -1,6 +1,6 @@
 from .atlas import *
 from .noise import *
-from .tiler import *
+from .tiling import *
 from .resampling import *
 from .util import *
 from .sdf import *

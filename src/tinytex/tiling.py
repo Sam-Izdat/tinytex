@@ -18,7 +18,7 @@ except ImportError:
 
 from .util import *
 
-class Tiler:
+class Tiling:
 
     @classmethod
     def get_tile_position(cls, idx:int, cols:int) -> (int, int):
