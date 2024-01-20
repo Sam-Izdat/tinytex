@@ -46,16 +46,6 @@ class SDF:
         render = torch.lerp(ones * value0, ones * value1, interp)
         return render
 
-    # @classmethod
-    # def __scale_dist(cls, dist, h, w, fac=0.1):
-    #     max_dist = np.sqrt(h**2 + w**2) * fac
-    #     dist = (dist * 0.5 + (max_dist * 0.5)) / max_dist
-    #     return dist.clip(0., 1.)
-
-    # @classmethod
-    # def __length(cls, vec):
-    #     return np.linalg.norm(vec)
-
     @classmethod
     def __length(cls, vec):
         return torch.norm(vec.float(), dim=-1)
@@ -97,39 +87,3 @@ class SDF:
         dist = cls.__length(pa - ba.unsqueeze(0) * h.unsqueeze(-1))        
         out = cls.__scale_dist(dist, size, size, length_factor).unsqueeze(0)
         return out
-
-    # @classmethod
-    # def circle(cls, size=256, r=100.):
-    #     out = np.ndarray([1, size, size])
-    #     for x in range(size):
-    #         for y in range(size):
-    #             x_ndc, y_ndc = y - int(size/2.), x - int(size/2.)
-    #             dist = cls.__length(np.array([x_ndc, y_ndc])) - r
-    #             out[..., y, x] = cls.__scale_dist(dist, size, size)
-    #     return torch.from_numpy(out)
-
-    # @classmethod
-    # def box(cls, size=256, h=64, w=64):
-    #     out = np.ndarray([1, size, size])
-    #     for x in range(size):
-    #         for y in range(size):
-    #             x_ndc, y_ndc = y - int(size/2.), x - int(size/2.)
-    #             dist = np.abs(np.array([x_ndc, y_ndc]))-np.array([h, w]);
-    #             dist = cls.__length(np.maximum(dist, 0.0)) + np.min(np.max(dist[0],dist[1]),0.0);
-    #             out[..., y, x] = cls.__scale_dist(dist, size, size)
-    #     return torch.from_numpy(out)
-
-    # @classmethod
-    # def segment(cls, size=256, ax=128, ay=0, bx=128, by=256):
-    #     out = np.ndarray([1, size, size])
-    #     a = np.array([ay - int(size/2.), ax - int(size/2.)])
-    #     b = np.array([by - int(size/2.), bx - int(size/2.)])
-    #     for x in range(size):
-    #         for y in range(size):
-    #             x_ndc, y_ndc = y - int(size/2.), x - int(size/2.)
-    #             pa = np.array([x_ndc, y_ndc]) - a
-    #             ba = b - a
-    #             h = np.clip(np.dot(pa, ba)/np.dot(ba, ba), 0.0, 1.0 )
-    #             dist = cls.__length(pa - ba * h)
-    #             out[..., y, x] = cls.__scale_dist(dist, size, size)
-    #     return torch.from_numpy(out)
