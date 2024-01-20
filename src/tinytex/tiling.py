@@ -38,26 +38,26 @@ class Tiling:
         """
         Get tile index from row and column position.
 
-        :param idx: tile index
-        :param r: tile's row position
-        :param c: tile's column position
-        :param cols: total number of columns in tile grid
+        :param idx: Tile index.
+        :param r: Tile's row position.
+        :param c: Tile's column position.
+        :param cols: Total number of columns in tile grid.
         :return: row and column position, respectively
         """
-        return (r * cols) + r
+        return (r * cols) + c
 
     @classmethod
     def get_tile_neighbors(cls, r:int, c:int, rows:int, cols:int, wrap=False) -> (int, int, int, int):
         """
         Get indices of adjacent tiles from tile's row and column position.
 
-        :param r: tile's row position
-        :param c: tile's column position
-        :param rows: total number of rows in tile grid
-        :param cols: total number of columns in tile grid
-        :param wrap: wrap around edge tiles to opposite side of grid
-        :return: top, right, bottom, and left tile indices of neighboring tiles, respectively, 
-            or -1 if no neighboring tile (when wrap is False)
+        :param r: Tile's row position.
+        :param c: Tile's column position.
+        :param rows: Total number of rows in tile grid.
+        :param cols: Total number of columns in tile grid.
+        :param wrap: Wrap around edge tiles to opposite side of grid.
+        :return: Tile indices of top, right, bottom, and left neighboring tiles, respectively, 
+            or -1 if no neighboring tile (when wrap is False).
         """
         top =       (r-1)*cols+c if r > 0       else (rows-1)*cols+c        if wrap else -1
         right =     r*cols+(c+1) if c < cols-1  else r*cols                 if wrap else -1
@@ -86,15 +86,13 @@ class Tiling:
             If image dimensions are not evenly divisible by tile size, 
             image will be effectively cropped, based on how many tiles can fit.
 
-        :param im: pytorch image tensor sized [N, C, H, W]
-        :param tile_size: tile size (height/width) in pixels
-        :return: [N, C, H, W] image tensor, 
-            number of row tiles, number of column tiles
+        :param im: Image tensor sized [N=1, C, H, W] or [C, H, W].
+        :param tile_size: Tile size (height/width) in pixels.
+        :return: Image tensor sized [N, C, H, W], number of rows, number of columns.
         """
         ndim = len(im.size())
-        assert ndim == 3 or ndim == 4, "tensor must be sized [C, H, W] or [N, C, H, W]"
-        nobatch = ndim == 3
-        if nobatch: im = im.unsqueeze(0)
+        assert ndim == 3 or (ndim == 4 and im.size(0) == 1), "tensor must be sized [N=1, C, H, W] or [C, H, W]"
+        if ndim == 3: im = im.unsqueeze(0)
         C, H, W = im.shape[1:]
 
         rows = H // tile_size
@@ -121,10 +119,10 @@ class Tiling:
             -------------
             | 6 | 7 | 8 |
 
-        :param im_tiles: tiles as pytorch image tensor sized [N, C, H, W]
-        :param rows: total number of rows in tile grid
-        :param cols: total number of columns in tile grid
-        :return: combined image tensor sized [C, H, W]
+        :param tiles: Tiles as pytorch image tensor sized [N, C, H, W].
+        :param rows: Total number of rows in tile grid.
+        :param cols: Total number of columns in tile grid.
+        :return: Combined image tensor sized [C, H, W].
         """
         assert len(tiles.size()) == 4, "image tensor must be sized [N, C, H, W]"
         N, C, H, W = tiles.size()      
@@ -143,7 +141,19 @@ class Tiling:
         rows:int=1, 
         cols:int=1, 
         wrap=True, 
-        is_vector=False) -> torch.Tensor:
+        vector_data=False) -> torch.Tensor:
+        """
+        Blend tiles to remove seams.
+
+        :param tiles: Tiles as pytorch image tensor sized [N, C, H, W] or [C, H, W].
+        :param rows: Total number of rows in tile grid.
+        :param cols: Total number of columns in tile grid.
+        :param wrap: Wrap tile grid border (allows self-tiling).
+        :param vector_data: Tiles contain directional unit vectors in [-1, 1] range - i.e. a normal map. 
+            If True, vectors will be converted to angles for blending so that component gradients 
+            can be matched independently.
+        :return: Blended tiles sized [N, C, H, W] or [C, H, W].
+        """
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, "tensor must be sized [C, H, W] or [N, C, H, W]"
         if ndim == 3: tiles = tiles.unsqueeze(0)

@@ -6,6 +6,7 @@ from combomethod import combomethod
 from .util import *
 
 class Atlas:
+
     min_auto_size = 64
     max_auto_size = 8192
     force_auto_square = False
@@ -26,7 +27,7 @@ class Atlas:
     err_out_of_bounds = 'failed to to fit textures into atlas'
 
     @combomethod
-    def pack(cls, textures, width=0, height=0, row_pack=False):
+    def pack(cls, textures:list, width:int=0, height:int=0, row_pack:bool=False) -> (torch.Tensor, list):
         if width == 0 or height == 0:
             i = 0
             auto_width, auto_height = width, height

@@ -32,6 +32,13 @@ class Resampling:
 
     @classmethod
     def tile_n(cls, im:torch.Tensor, repeat_h:int, repeat_w:int):
+        """
+        Tile image tensor by number of repetitions.
+
+        :param im: image tensor sized [C, H, W] or [N, C, H, W]
+        :param target_shape: target shape as (height, width) tuple
+        :return: padded image tensor sized [C, H, W] or [N, C, H, W] where H = W
+        """
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size
         nobatch = ndim == 3
@@ -86,7 +93,7 @@ class Resampling:
     @classmethod
     def resize_longest_edge(cls, im:torch.Tensor, target_size:int, mode:str='bilinear') -> torch.Tensor:
         """
-        Resize image tensor longest edge to arbitrary size, constraining proportions.
+        Resize image tensor by longest edge, constraining proportions.
 
         :param im: image tensor sized [C, H, W] or [N, C, H, W]
         :param target_size: target size for longest edge
@@ -107,7 +114,7 @@ class Resampling:
 
     def resize_to_next_pot(im:torch.Tensor):
         """
-        Resize image longest edge to next highest power-of-two, constraining proportions
+        Resize image tensor by longest edge to next highest power-of-two, constraining proportions.
 
         :param torch.tensor im: image tensor sized [N, C, H, W]
         :return: resampled image tensor sized [N, C, H, W]

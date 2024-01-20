@@ -6,6 +6,7 @@ from typing import Union
 from enum import IntEnum
 
 class Smoothstep:
+    
     class Interpolant(IntEnum):
         CUBIC_POLYNOMIAL            = 1<<1
         QUARTIC_POLYNOMIAL          = 1<<2
