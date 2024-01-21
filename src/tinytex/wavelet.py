@@ -12,8 +12,9 @@ class Wavelet:
         """
         1D Haar transform.
         """
-        if a.size(0) == 1: return a.clone()
-        assert a.size(0) % 2 == 0, "length needs to be even"
+        l = a.size(0) 
+        if l == 1: return a.clone()
+        assert l % 2 == 0, "length needs to be even"
         mid = (a[0::2] + a[1::2]) / cls.scale
         side = (a[0::2] - a[1::2]) / cls.scale
         return torch.cat((cls.haar(mid), side), dim=0)
@@ -23,10 +24,11 @@ class Wavelet:
         """
         1D inverse Haar transform.
         """
-        if a.size(0) == 1: return a.clone()
-        assert a.size(0) % 2 == 0, "length needs to be even"
-        mid = cls.ihaar(a[0:a.size(0)//2]) * cls.scale
-        side = a[a.size(0)//2:] * cls.scale
+        l = a.size(0) 
+        if l == 1: return a.clone()
+        assert l % 2 == 0, "length needs to be even"
+        mid = cls.ihaar(a[0:l//2]) * cls.scale
+        side = a[l//2:] * cls.scale
         out = torch.zeros(a.size(0), dtype=torch.float32)
         out[0::2] = (mid + side) / 2.
         out[1::2] = (mid - side) / 2.
