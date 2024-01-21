@@ -482,7 +482,7 @@ class Geometry:
 
     def __height_to_pos(height_map:torch.Tensor, device=torch.device('cpu')) -> torch.Tensor:
         """
-        Convert image tensor of height values to flat tensor of position vectors
+        Convert image tensor of height values to flat tensor of position vectors.
 
         :param torch.tensor height_map: height map tensor sized [C=1, H, W] in 0-1 range
         :param device: device for tensors (i.e. cpu or cuda)

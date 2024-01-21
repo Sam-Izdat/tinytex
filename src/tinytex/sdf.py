@@ -2,7 +2,6 @@ from typing import Union, Tuple
 
 import imageio
 import numpy as np
-import matplotlib.pyplot as plt
 import skfmm
 
 import torch
@@ -68,8 +67,8 @@ class SDF:
         tile_to:int=None) -> torch.Tensor:
         assert size <= tile_to, cls.err_tile
         y, x = torch.meshgrid(torch.arange(size), torch.arange(size), indexing="xy")
-        x_ndc, y_ndc = x - size // 2, y - size // 2
-        dist = cls.__length(torch.stack([x_ndc, y_ndc], dim=-1)) - float(radius)
+        x_nrm, y_nrm = x - size // 2, y - size // 2
+        dist = cls.__length(torch.stack([x_nrm, y_nrm], dim=-1)) - float(radius)
         out = cls.__scale_dist(dist, size, size, length_factor).unsqueeze(0).clamp(0., 1.)
         if tile_to is not None: out = Resampling.tile(out, (tile_to, tile_to))
         return out
@@ -83,9 +82,9 @@ class SDF:
         assert size <= tile_to, cls.err_tile
         h, w = box_shape[0] // 2, box_shape[1] // 2
         y, x = torch.meshgrid(torch.arange(size), torch.arange(size), indexing="xy")
-        x_ndc, y_ndc = x - size // 2, y - size // 2
+        x_nrm, y_nrm = x - size // 2, y - size // 2
         hw = torch.tensor([h, w], dtype=torch.float32).unsqueeze(0).unsqueeze(0).repeat(size, size, 1)
-        dist = torch.abs(torch.stack([x_ndc, y_ndc], dim=-1)) - hw
+        dist = torch.abs(torch.stack([x_nrm, y_nrm], dim=-1)) - hw
         dist = cls.__length(dist.clamp(0.)) + torch.minimum(
             torch.maximum(dist[..., 0], dist[..., 1]), torch.zeros_like(dist[..., 0])).squeeze(-1)
         out = cls.__scale_dist(dist, size, size, length_factor).unsqueeze(0).clamp(0., 1.)
@@ -103,10 +102,10 @@ class SDF:
         ax, ay = a
         bx, by = b
         y, x = torch.meshgrid(torch.arange(size), torch.arange(size), indexing="xy")
-        x_ndc, y_ndc = x - size // 2, y - size // 2
+        x_nrm, y_nrm = x - size // 2, y - size // 2
         a = torch.tensor([ay - size // 2, ax - size // 2], dtype=torch.float32)
         b = torch.tensor([by - size // 2, bx - size // 2], dtype=torch.float32)
-        pa = torch.stack([x_ndc, y_ndc], dim=-1) - a
+        pa = torch.stack([x_nrm, y_nrm], dim=-1) - a
         ba = b - a
         h = torch.clamp(torch.sum(pa * ba, dim=-1) / torch.sum(ba * ba), 0.0, 1.0)
         dist = cls.__length(pa - ba.unsqueeze(0) * h.unsqueeze(-1))        

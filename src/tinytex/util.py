@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import random
 
-def find_closest_divisor(n:int, m:int) -> int: 
+def closest_divisor(n:int, m:int) -> int: 
     """
     Find the divisor of n closest to m
 

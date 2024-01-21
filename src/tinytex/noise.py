@@ -98,8 +98,8 @@ class Noise:
         assert density > 0., cls.err_density_zero
         assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         res = (
-            find_closest_divisor(shape[0], np.ceil(shape[0]/256.*density)), 
-            find_closest_divisor(shape[1], np.ceil(shape[1]/256.*density)))
+            closest_divisor(shape[0], np.ceil(shape[0]/256.*density)), 
+            closest_divisor(shape[1], np.ceil(shape[1]/256.*density)))
         out = cls.__perlin_np(shape, res, tileable, interpolant)
         return torch.from_numpy(np.expand_dims(out, 0).astype(np.float32)*0.5+0.5).clamp(0., 1.)
 
@@ -184,8 +184,8 @@ class Noise:
         assert density > 0., cls.err_density_zero
         assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         res = (
-            find_closest_divisor(shape[0], np.ceil(shape[0]/256.*density)), 
-            find_closest_divisor(shape[1], np.ceil(shape[1]/256.*density)))
+            closest_divisor(shape[0], np.ceil(shape[0]/256.*density)), 
+            closest_divisor(shape[1], np.ceil(shape[1]/256.*density)))
         out = cls.__fractal_np(shape, res, octaves, persistence, lacunarity, tileable, interpolant, turbulence=False)
         return torch.from_numpy(np.expand_dims(out, 0).astype(np.float32)*0.5+0.5).clamp(0., 1.)
 
@@ -202,8 +202,8 @@ class Noise:
         assert density > 0., cls.err_density_zero
         assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         res = (
-            find_closest_divisor(shape[0], np.ceil(shape[0]/256.*density)), 
-            find_closest_divisor(shape[1], np.ceil(shape[1]/256.*density)))
+            closest_divisor(shape[0], np.ceil(shape[0]/256.*density)), 
+            closest_divisor(shape[1], np.ceil(shape[1]/256.*density)))
         out = cls.__fractal_np(shape, res, octaves, persistence, lacunarity, tileable, interpolant, turbulence=True)
         if ridge:
             out = 1. - out

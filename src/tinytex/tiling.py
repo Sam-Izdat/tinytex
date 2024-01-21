@@ -36,7 +36,7 @@ class Tiling:
     @classmethod
     def get_tile_index(cls, r:int, c:int, cols:int) -> int:
         """
-        Get tile index from row and column position.
+        Get tile index, by row and column position.
 
         :param idx: Tile index.
         :param r: Tile's row position.
@@ -255,7 +255,7 @@ class Tiling:
             solve = lss.solver(P, prm=dict(type='lgmres', tol=tol, maxiter=1000)) # ? bicgstab, lgmres ; tol 1e-8
             x = solve(A, b).reshape(im.shape)
         else:
-            raise Exception('failed to identify poisson solver')
+            raise ImportError('failed to identify poisson solver')
 
         res = torch.from_numpy(x).unsqueeze(2).permute(2, 0, 1).unsqueeze(0) if torch_tensors else x
         return res
