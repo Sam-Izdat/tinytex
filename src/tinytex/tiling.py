@@ -154,15 +154,16 @@ class Tiling:
             can be matched independently.
         :return: Blended tiles sized [N, C, H, W] or [C, H, W].
         """
-        print("???!!!!",tiles.size())
         ndim = len(tiles.size())
         assert ndim == 3 or ndim == 4, "tensor must be sized [C, H, W] or [N, C, H, W]"
-        if ndim == 3: tiles = tiles.unsqueeze(0)
+        nobatch = ndim == 3
+        if nobatch: tiles = tiles.unsqueeze(0)
         N, C, H, W = tiles.size()
         assert rows * cols == N, "number of tiles must match rows * columns"
         blended_tiles = torch.zeros_like(tiles)
         tiles_tmp = []
         if vector_data:
+            assert C == 3, "vector data must have 3 channel components"
             for n in range(N):
                 tiles_tmp.append(Geometry.normals_to_angles(tiles[n:n+1,...]))
             tiles_tmp = torch.cat(tiles_tmp, dim=0)
@@ -187,7 +188,7 @@ class Tiling:
         if vector_data:
             for n in range(N):
                 blended_tiles[n:n+1] = Geometry.angles_to_normals(blended_tiles[n:n+1,...])
-        return blended_tiles
+        return blended_tiles.squeeze(0) if nobatch else blended_tiles
 
     @classmethod        
     def __poisson_blend(cls,
