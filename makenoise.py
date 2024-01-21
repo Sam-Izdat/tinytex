@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 
+from timeit import default_timer as timer
+
 # from perlin import generate_perlin_noise_2d, generate_fractal_noise_2d
 # from worley import worley
 
@@ -21,29 +23,39 @@ from tinytex import *
 # noise1 = SDF.from_image(1. - foo)
 
 im_a = fsio.load_image('out/a.png')[0:1,...]
-
-im_a = Resampling.resize(im_a, shape=(512,512))
-sdf_a = SDF.compute(im_a, length_factor=0.02)
+t = timer()
+im_a = Resampling.resize(im_a, shape=(256,256))
+print('resample', timer() - t)
+t = timer()
+sdf_a = Resampling.resize(SDF.compute(im_a, length_factor=0.02), shape=(512,512))
+print('compute sdf', timer() - t)
+t = timer()
 sdf_s1 = SDF.segment(size=64, a=(0,0), b=(64,64), tile_to=512)
 sdf_s2 = SDF.segment(size=64, a=(0,64), b=(64,0), tile_to=512)
+
+print('compute sdf segments', timer() - t)
+t = timer()
+
 sdf_merged = SDF.min(SDF.min(sdf_s1, sdf_s2), sdf_a)
 tiles = SDF.render(sdf_merged, shape=(1024, 1024), edge0=0.44, edge1=0.56)
+
+print('SDF merge & render', timer() - t)
+t = timer()
+
 noise = Noise.fractal(shape=(1024,1024))
-print('im_a',im_a.size())
-print('sdf_a',sdf_a.size())
-print('sdf_s1',sdf_s1.size())
-print('sdf_s2',sdf_s2.size())
-print('sdf_merged',sdf_merged.size())
-print('tiles',tiles.size())
-print('noise',noise.size())
+print('generate fractal noise', timer() - t)
+t = timer()
+
 norm_tiles = Geometry.height_to_normals(tiles)
 norm_noise = Geometry.height_to_normals(noise)
-print('norm_tiles',norm_tiles.size())
-print('norm_noise',norm_noise.size())
+print('height to normals', timer() - t)
+t = timer()
+
 norm_final = Geometry.blend_normals(norm_tiles, norm_noise)
-print('norm_final',norm_final.size())
+print('blend normals', timer() - t)
+t = timer()
 fsio.save_image(norm_final*0.5+0.5, 'out/normals_from_height.png')
-print('norm_final',norm_final.size())
+
 height, _ = Geometry.normals_to_height(norm_final)
 fsio.save_image(height, 'out/height_from_normals.png')
 

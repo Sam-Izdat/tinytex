@@ -5,3 +5,4 @@ from .resampling import *
 from .util import *
 from .sdf import *
 from .geometry import *
+from .wavelet import *
