@@ -113,7 +113,7 @@ class Geometry:
         :param eps: epsilon
         :return: blended normals tensor sized [N, C=3, H, W] as unit vectors of surface normals
         """
-        assert normal_map.size() == normals_detail.size(), "base and detail tensors must have same number of dimensions"
+        assert normals_base.size() == normals_detail.size(), "base and detail tensors must have same number of dimensions"
         ndim = len(normals_base.size())
         assert ndim == 3 or ndim == 4, cls.err_size
         nobatch = ndim == 3

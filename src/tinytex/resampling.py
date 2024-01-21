@@ -9,19 +9,19 @@ class Resampling:
     err_size = "tensor must be sized [C, H, W] or [N, C, H, W]"
 
     @classmethod
-    def tile(cls, im:torch.Tensor, target_shape:tuple) -> torch.Tensor:
+    def tile(cls, im:torch.Tensor, shape:tuple) -> torch.Tensor:
         """
         Tile image tensor to target shape.
 
         :param im: image tensor sized [C, H, W] or [N, C, H, W]
-        :param target_shape: target shape as (height, width) tuple
+        :param shape: target shape as (height, width) tuple
         :return: padded image tensor sized [C, H, W] or [N, C, H, W] where H = W
         """
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size
         nobatch = ndim == 3
         if nobatch: im = im.unsqueeze(0)
-        new_H, new_W = target_shape[0], target_shape[1]
+        new_H, new_W = shape[0], shape[1]
         H, W = im.shape[2:]
         assert H < new_H and W < new_W, "target shape must be larger than input shape"
         h_tiles = (new_H // H) + 1
@@ -35,16 +35,17 @@ class Resampling:
         """
         Tile image tensor by number of repetitions.
 
-        :param im: image tensor sized [C, H, W] or [N, C, H, W]
-        :param target_shape: target shape as (height, width) tuple
-        :return: padded image tensor sized [C, H, W] or [N, C, H, W] where H = W
+        :param im: Image tensor sized [C, H, W] or [N, C, H, W]
+        :param repeat_h: Times to repeat height vertically.
+        :param repeat_w: Times to repeat width horizontally.
+        :return: Padded image tensor sized [C, H, W] or [N, C, H, W].
         """
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size
         nobatch = ndim == 3
         if nobatch: im = im.unsqueeze(0)        
         H, W = im.shape[2:]
-        tiled_tensor = cls.tile(im, target_shape=(H*repeat_h, W*repeat_w))
+        tiled_tensor = cls.tile(im, shape=(H*repeat_h, W*repeat_w))
         return tiled_tensor.squeeze(0) if nobatch else tiled_tensor
 
     @classmethod
@@ -74,12 +75,12 @@ class Resampling:
         return res.squeeze(0) if nobatch else res
 
     @classmethod
-    def resize(cls, im:torch.Tensor, target_shape:tuple, mode:str='bilinear'):    
+    def resize(cls, im:torch.Tensor, shape:tuple, mode:str='bilinear'):    
         """
         Resize image tensor longest to target shape.
 
         :param im: image tensor sized [C, H, W] or [N, C, H, W]
-        :param target_shape: target shape as (height, width) tuple
+        :param shape: target shape as (height, width) tuple
         :param mode: resampleing algorithm ('nearest' | 'linear' | 'bilinear' | 'bicubic')
         :return: resampled image tensor sized [C, H, W] or [N, C, H, W]
         """
@@ -87,7 +88,7 @@ class Resampling:
         assert ndim == 3 or ndim == 4, cls.err_size
         nobatch = ndim == 3
         if nobatch: im = im.unsqueeze(0)
-        res = F.interpolate(im, size=target_shape, mode=mode, align_corners=False)
+        res = F.interpolate(im, size=shape, mode=mode, align_corners=False)
         return res.squeeze(0) if nobatch else res
 
     @classmethod
@@ -130,7 +131,7 @@ class Resampling:
         return res.squeeze(0) if nobatch else res
 
     @classmethod
-    def pad(cls, im:torch.Tensor, target_shape:tuple, mode:str='bilinear') -> torch.Tensor:
+    def pad(cls, im:torch.Tensor, shape:tuple, mode:str='bilinear') -> torch.Tensor:
         """
         Pad image tensor to target shape.
 
@@ -143,7 +144,7 @@ class Resampling:
         if nobatch: im = im.unsqueeze(0)
 
         H, W = im.shape[2:]
-        th, tw = target_shape[0], target_shape[1]
+        th, tw = shape[0], shape[1]
         assert tw > W and th > H, "target dimensions must be larger than image dimensions"
 
         pad_h = int(th - H)
@@ -175,6 +176,6 @@ class Resampling:
         if nobatch: im = im.unsqueeze(0)
         H, W = im.shape[2:]
         size = next_pot(max(H, W))
-        padded_image = cls.pad(im, target_shape=(size, size), mode=mode)
+        padded_image = cls.pad(im, shape=(size, size), mode=mode)
         if nobatch: padded_image = padded_image.squeeze(0)
         return padded_image

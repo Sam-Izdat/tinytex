@@ -12,18 +12,43 @@ from tinytex import *
 # Assuming textures is a list of TextureRect objects
 
 
-foo = fsio.load_image('out/a.png')[0:1,...]
+
 # bar, bar_scale  = Geometry.normals_to_height(foo.unsqueeze(0) * 2. - 1., self_tiling=True)
 # print(bar.size())
 # exit()
 
-noise1 = Noise.fractal((512,512))
+# noise1 = Noise.fractal((512,512))
 # noise1 = SDF.from_image(1. - foo)
-noise1 = SDF.render(noise1, (512, 512), 0.48, 0.52, 0., 1.,mode='bicubic')
-baz = Geometry.height_to_normals(noise1.unsqueeze(0).clamp(0.,1.) * 1. )
-# fsio.save_image(bar.squeeze(0), 'out/height.png')
 
-fsio.save_image(baz.squeeze(0)*0.5+0.5, 'out/normals_from_height.png')
+im_a = fsio.load_image('out/a.png')[0:1,...]
+
+im_a = Resampling.resize(im_a, shape=(512,512))
+sdf_a = SDF.compute(im_a, length_factor=0.02)
+sdf_s1 = SDF.segment(size=64, a=(0,0), b=(64,64), tile_to=512)
+sdf_s2 = SDF.segment(size=64, a=(0,64), b=(64,0), tile_to=512)
+sdf_merged = SDF.min(SDF.min(sdf_s1, sdf_s2), sdf_a)
+tiles = SDF.render(sdf_merged, shape=(1024, 1024), edge0=0.44, edge1=0.56)
+noise = Noise.fractal(shape=(1024,1024))
+print('im_a',im_a.size())
+print('sdf_a',sdf_a.size())
+print('sdf_s1',sdf_s1.size())
+print('sdf_s2',sdf_s2.size())
+print('sdf_merged',sdf_merged.size())
+print('tiles',tiles.size())
+print('noise',noise.size())
+norm_tiles = Geometry.height_to_normals(tiles)
+norm_noise = Geometry.height_to_normals(noise)
+print('norm_tiles',norm_tiles.size())
+print('norm_noise',norm_noise.size())
+norm_final = Geometry.blend_normals(norm_tiles, norm_noise)
+print('norm_final',norm_final.size())
+fsio.save_image(norm_final*0.5+0.5, 'out/normals_from_height.png')
+print('norm_final',norm_final.size())
+height, _ = Geometry.normals_to_height(norm_final)
+fsio.save_image(height, 'out/height_from_normals.png')
+
+exit()
+# fsio.save_image(bar.squeeze(0), 'out/height.png')
 
 
 # foo = fsio.load_image('out/a_small.png')
