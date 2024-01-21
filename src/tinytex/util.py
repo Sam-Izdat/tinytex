@@ -4,7 +4,7 @@ import random
 
 def closest_divisor(n:int, m:int) -> int: 
     """
-    Find the divisor of n closest to m
+    Find the divisor of n closest to m.
 
     :return: Closest divisor.    
     """

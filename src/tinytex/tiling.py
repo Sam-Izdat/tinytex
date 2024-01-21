@@ -154,28 +154,39 @@ class Tiling:
             can be matched independently.
         :return: Blended tiles sized [N, C, H, W] or [C, H, W].
         """
-        ndim = len(im.size())
+        print("???!!!!",tiles.size())
+        ndim = len(tiles.size())
         assert ndim == 3 or ndim == 4, "tensor must be sized [C, H, W] or [N, C, H, W]"
         if ndim == 3: tiles = tiles.unsqueeze(0)
         N, C, H, W = tiles.size()
         assert rows * cols == N, "number of tiles must match rows * columns"
         blended_tiles = torch.zeros_like(tiles)
+        tiles_tmp = []
+        if vector_data:
+            for n in range(N):
+                tiles_tmp.append(Geometry.normals_to_angles(tiles[n:n+1,...]))
+            tiles_tmp = torch.cat(tiles_tmp, dim=0)
+        else:
+            tiles_tmp = tiles.clone()
         if N == 1:
             # make single image self-tiling
-            blended_tiles[0] = cls.__poisson_blend(tiles[0], torch_tensors=True, cb=print)
+            for c in range(tiles_tmp.size(1)):
+                blended_tiles[0, c:c+1] = cls.__poisson_blend(tiles_tmp[0, c:c+1], torch_tensors=True, cb=print)
         else:
-            # TODO: Special case for UNORM
             for n in range(N):
                 pos_r, pos_c = cls.get_tile_position(n, rows, cols)
                 t, r, b, l = cls.get_tile_neighbors(pos_r, pos_c, rows, cols, wrap=wrap)
-                for c in range(C):
-                    blended_tiles[n, c:c+1] = cls.__poisson_blend(tiles[n, c:c+1],
+                for c in range(tiles_tmp.size(1)):
+                    blended_tiles[n, c:c+1] = cls.__poisson_blend(tiles_tmp[n, c:c+1],
                         torch_tensors=True,
-                        top=tiles[t, c:c+1],
-                        right=tiles[r, c:c+1],
-                        bottom=tiles[b, c:c+1],
-                        left=tiles[l, c:c+1],
-                        cb=print)
+                        top=tiles_tmp[t, c:c+1],
+                        right=tiles_tmp[r, c:c+1],
+                        bottom=tiles_tmp[b, c:c+1],
+                        left=tiles_tmp[l, c:c+1],
+                        cb=print)                    
+        if vector_data:
+            for n in range(N):
+                blended_tiles[n:n+1] = Geometry.angles_to_normals(blended_tiles[n:n+1,...])
         return blended_tiles
 
     @classmethod        
