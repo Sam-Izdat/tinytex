@@ -5,4 +5,6 @@ from .resampling import *
 from .sdf import *
 from .geometry import *
 from .wavelet import *
+from .diffraction import *
+from .warping import *
 from .util import *

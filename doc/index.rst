@@ -4,7 +4,7 @@ tinytex
 A lightweight Python texture editing and generation library: surface processing, atlasing, tiling, signed distance fields, resampling and noise generation.
 
 
-TODO: polar, log-polar transform, wavelets
+TODO: polar, log-polar transform, wavelets, chromatic PSF & conv, SH
 
 This library can be used to:
 
@@ -68,6 +68,7 @@ Special thanks
     :caption: Reference:
     :hidden:
 
+    source/tinytex
     source/about_release_notes
     source/license
     genindex

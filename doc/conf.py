@@ -67,7 +67,7 @@ html_css_files = [
     'css/patch.css',
 ]
 
-autodoc_mock_imports = ["torch", "torchvision", "numpy", "scipy", "taichi"]
+# autodoc_mock_imports = ["torch", "torchvision", "numpy", "scipy", "taichi"]
 
 html_show_sphinx = False
 html_show_copyright = False

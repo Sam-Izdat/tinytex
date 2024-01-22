@@ -81,7 +81,7 @@ class Tiling:
             -------------
             | 6 | 7 | 8 |
 
-        ..warning:: 
+        .. warning:: 
 
             If image dimensions are not evenly divisible by tile size, 
             image will be effectively cropped, based on how many tiles can fit.

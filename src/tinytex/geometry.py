@@ -25,7 +25,7 @@ class Geometry:
         normalize:bool=False, 
         rescaled:bool=False):
         """
-        Convert tangent-space normals vectors to scaled spherical coordinates.
+        Convert tangent-space normal vectors to scaled spherical coordinates.
 
         :param normal_map: Input normal map sized [N, C=3, H, W] or [C=3, H, W].
         :param recompute_z: Discard and recompute normals' z-channel before conversion.
@@ -111,7 +111,8 @@ class Geometry:
             as unit vectors of surface normals
         :param rescaled: Input and returned unit vector tensors should be in [0, 1] value range.
         :param eps: epsilon
-        :return: blended normals tensor sized [N, C=3, H, W] as unit vectors of surface normals
+        :return: blended normals tensor sized [N, C=3, H, W] or [C=3, H, W] 
+            as unit vectors of surface normals
         """
         assert normals_base.size() == normals_detail.size(), "base and detail tensors must have same number of dimensions"
         ndim = len(normals_base.size())
@@ -153,10 +154,10 @@ class Geometry:
         """
         Compute tangent-space normals form height.
 
-        :param height_map: Height map tensor sized [N, C=1, H, W] in [0, 1] range
+        :param height_map: Height map tensor sized [N, C=1, H, W] or [C=1, H, W] in [0, 1] range
         :param rescaled: Return unit vector tensor in [0, 1] value range.
         :param eps: Epsilon
-        :return: normals tensor sized [N, C=3, H, W] as unit vectors of surface normals.
+        :return: normals tensor sized [N, C=3, H, W] or [C=3, H, W] as unit vectors of surface normals.
         """
         ndim = len(height_map.size())
         assert ndim == 3 or ndim == 4, cls.err_size
@@ -191,8 +192,8 @@ class Geometry:
         """
         Compute height from normals. Frankot-Chellappa algorithm.
 
-        :param normal_map: Normal map tensor sized [N, C=3, H, W] as unit vectors 
-            of surface normals.
+        :param normal_map: Normal map tensor sized [N, C=3, H, W] or [C=3, H, W] 
+            as unit vectors of surface normals.
         :param self_tiling: Treat surface as self-tiling.
         :param rescaled: Accept unit vector tensor in [0, 1] value range.
         :return: Height tensor sized [N, C=1, H, W] or [C=1, H, W] in [0, 1] range 

@@ -35,21 +35,21 @@ class Wavelet:
         return out
 
     @classmethod
-    def haar_2d(cls, img:torch.Tensor) -> torch.Tensor:
+    def haar_2d(cls, im:torch.Tensor) -> torch.Tensor:
         """
         2D Haar transform.
         """
-        h, w = img.shape
-        rows = torch.zeros(img.shape, dtype=torch.float32)
-        for y in range(h): rows[y] = cls.haar(img[y])
-        cols = torch.zeros(img.shape, dtype=torch.float32)
+        h, w = im.shape
+        rows = torch.zeros(im.shape, dtype=torch.float32)
+        for y in range(h): rows[y] = cls.haar(im[y])
+        cols = torch.zeros(im.shape, dtype=torch.float32)
         for x in range(w): cols[:, x] = cls.haar(rows[:, x])
         return cols
 
     @classmethod
     def ihaar_2d(cls, coeffs:torch.Tensor) -> torch.Tensor:
         """
-        1D inverse Haar transform.
+        2D inverse Haar transform.
         """
         h, w = coeffs.shape
         cols = torch.zeros(coeffs.shape, dtype=torch.float32)
@@ -68,19 +68,19 @@ class Wavelet:
         return torch.where(torch.abs(a) > magnitude[idx], a, torch.tensor(0, dtype=a.dtype))
 
     @classmethod
-    def haar_bipolar(cls, img:torch.Tensor) -> torch.Tensor:
+    def haar_bipolar(cls, im:torch.Tensor) -> torch.Tensor:
         """
         Scales Haar coefficients to range [0, 1]. 
-        Returns [C=2, H, W] sized tensor where negative values are red, 
+        Returns [C=3, H, W] sized tensor where negative values are red, 
         positive values are blue, and zero is black.
         """
-        h, w = img.shape
-        img = img.clone()
-        img /= torch.abs(img).max()
+        h, w = im.shape
+        im = im.clone()
+        im /= torch.abs(im).max()
         out = torch.zeros((h, w, 3), dtype=torch.float32)
         a = 0.005
         b = 1. - a
         c = 0.5
-        out[:, :, 0] = torch.where(img < 0, a + b * torch.pow(torch.abs(img / (img.min() - 0.001)), c), torch.tensor(0.0))
-        out[:, :, 2] = torch.where(img > 0, a + b * torch.pow(torch.abs(img / (img.max() + 0.001)), c), torch.tensor(0.0))
+        out[:, :, 0] = torch.where(im < 0, a + b * torch.pow(torch.abs(im / (im.min() - 0.001)), c), torch.tensor(0.0))
+        out[:, :, 2] = torch.where(im > 0, a + b * torch.pow(torch.abs(im / (im.max() + 0.001)), c), torch.tensor(0.0))
         return out.permute(2, 0, 1)

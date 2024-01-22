@@ -2,6 +2,8 @@ import torch
 import numpy as np
 import random
 
+from tqdm import tqdm
+
 def closest_divisor(n:int, m:int) -> int: 
     """
     Find the divisor of n closest to m.
@@ -40,3 +42,14 @@ def seed_everything(seed: int) -> bool:
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     return True
+
+class _ProgressBar(tqdm):
+    """Provides `update_fit_status(n)` which uses `tqdm.update(delta_n)`."""
+    def update_status(self, batches_done=1, steps_per_batch=1, steps_total=None, desc=''):
+        if steps_total is not None: self.total = steps_total
+        self.set_description(desc)
+        return self.update(batches_done * steps_per_batch - self.n)
+
+def progress_bar(desc:str="Computing"): 
+    """Context to display a progressbar with tqdm."""
+    return _ProgressBar(unit=' steps', unit_scale=True, unit_divisor=1024, miniters=1, desc=desc)
