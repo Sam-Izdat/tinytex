@@ -12,6 +12,8 @@ from .interpolation import Smoothstep
 
 class SDF:
 
+    """Signed distance field computation and rendering."""
+
     err_tile = "cannot tile to dimensions smaller than SDF dimensions"
 
     @classmethod

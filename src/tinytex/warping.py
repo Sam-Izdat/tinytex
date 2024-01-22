@@ -3,6 +3,9 @@ import torch.nn.functional as F
 import numpy as np
 
 class Warping:
+    
+    """Warping and coordinate system translation."""
+
     @classmethod
     def polar(cls, im:torch.Tensor, start_from:int=1) -> torch.Tensor:
         ndim = len(im.size())

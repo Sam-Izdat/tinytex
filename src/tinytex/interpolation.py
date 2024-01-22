@@ -6,6 +6,7 @@ from typing import Union
 from enum import IntEnum
 
 class Smoothstep:
+    """Smoothstep interpolation."""
     
     class Interpolant(IntEnum):
         CUBIC_POLYNOMIAL            = 1<<1
@@ -59,7 +60,7 @@ class Smoothstep:
         e0:float, 
         e1:float, 
         x:Union[float, torch.Tensor], 
-        n:int=None) -> Union[float, torch.Tensor]:
+        n:int=None) -> (float, torch.Tensor):
         """
         Smoothstep interpolation.
 
@@ -68,6 +69,7 @@ class Smoothstep:
         :param e1: Upper edge (max).
         :param x: Value.
         :param n: Order (if applicable).
+        :rtype: float, torch.Tensor
         """
         if torch.is_tensor(x):
             x = torch.clamp((x - e0) / (e1 - e0), 0., 1.)

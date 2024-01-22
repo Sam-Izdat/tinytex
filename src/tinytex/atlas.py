@@ -7,6 +7,8 @@ from .util import *
 
 class Atlas:
 
+    """Texture atlas packing."""
+
     min_auto_size = 64
     max_auto_size = 8192
     force_auto_square = False

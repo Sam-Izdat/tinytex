@@ -14,6 +14,9 @@ from tinycio import Spectral, ColorSpace
 from .util import progress_bar
 
 class Diffraction:
+
+    """Chromatic point spread function computation."""
+
     @classmethod
     def chromatic_psf(cls, 
         aperture:torch.Tensor, 

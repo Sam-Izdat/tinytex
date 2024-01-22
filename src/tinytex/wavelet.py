@@ -2,8 +2,9 @@ import torch
 
 class Wavelet:
 
-    # See: https://unix4lyfe.org/haar/
-    # Based on Emil Mikulic's implementation.
+    """Wavelet transforms."""
+    
+    # See Emil Mikulic's implementation: https://unix4lyfe.org/haar/
 
     scale = torch.sqrt(torch.tensor(2.0))
 

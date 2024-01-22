@@ -1,3 +1,6 @@
+import typing
+from typing import Union, Tuple
+
 import torch
 
 from scipy.sparse import lil_matrix
@@ -19,6 +22,8 @@ except ImportError:
 from .util import *
 
 class Tiling:
+
+    """Tiling and tile blending."""
 
     @classmethod
     def get_tile_position(cls, idx:int, cols:int) -> (int, int):
@@ -47,7 +52,7 @@ class Tiling:
         return (r * cols) + c
 
     @classmethod
-    def get_tile_neighbors(cls, r:int, c:int, rows:int, cols:int, wrap=False) -> (int, int, int, int):
+    def get_tile_neighbors(cls, r:int, c:int, rows:int, cols:int, wrap:bool=False) -> (int, int, int, int):
         """
         Get indices of adjacent tiles from tile's row and column position.
 

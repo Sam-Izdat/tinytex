@@ -38,6 +38,7 @@ with open('../pyproject.toml', 'r') as f:
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    # 'sphinx_autodoc_typehints',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary'
@@ -68,6 +69,7 @@ html_css_files = [
 ]
 
 # autodoc_mock_imports = ["torch", "torchvision", "numpy", "scipy", "taichi"]
+autodoc_mock_imports = ["torch", "torchvision", "scipy", "taichi"]
 
 html_show_sphinx = False
 html_show_copyright = False

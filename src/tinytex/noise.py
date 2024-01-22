@@ -9,6 +9,8 @@ from .interpolation import Smoothstep
 
 class Noise:
 
+    """Procedural noise."""
+
     err_hw_pot = "height and width must be power-of-two"
     err_density_zero = "density cannot be zero"
 

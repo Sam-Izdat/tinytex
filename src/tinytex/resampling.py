@@ -6,6 +6,8 @@ from .util import *
 
 class Resampling:
 
+    """Image resizing and padding."""
+
     err_size = "tensor must be sized [C, H, W] or [N, C, H, W]"
 
     @classmethod

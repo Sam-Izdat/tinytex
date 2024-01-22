@@ -337,7 +337,8 @@ class Geometry:
         :param radius: Occlusion radius.
         :param samples: Number of occlusion samples per pixel.
         :param rescaled: Input and returned unit vector tensors should be in [0, 1] value range.
-        :return: Ambient occlusion tensor sized [N, C=1, H, W] and bent normals tensor sized [N, C=3, H, W].
+        :return: Ambient occlusion tensor sized [N, C=1, H, W] or [C=1, H, W], 
+            bent normals tensor sized [N, C=3, H, W] or [C=3, H, W].
         """
         assert normal_map is not None or height_map is not None, "normal map and height map cannot both be None"
         if normal_map is None:
