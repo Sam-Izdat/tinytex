@@ -67,12 +67,13 @@ class SDF:
         radius:int=20, 
         length_factor:float=0.1, 
         tile_to:int=None) -> torch.Tensor:
-        assert size <= tile_to, cls.err_tile
         y, x = torch.meshgrid(torch.arange(size), torch.arange(size), indexing="xy")
         x_nrm, y_nrm = x - size // 2, y - size // 2
         dist = cls.__length(torch.stack([x_nrm, y_nrm], dim=-1)) - float(radius)
         out = cls.__scale_dist(dist, size, size, length_factor).unsqueeze(0).clamp(0., 1.)
-        if tile_to is not None: out = Resampling.tile(out, (tile_to, tile_to))
+        if tile_to is not None: 
+            assert size <= tile_to, cls.err_tile
+            out = Resampling.tile(out, (tile_to, tile_to))
         return out
 
     @classmethod

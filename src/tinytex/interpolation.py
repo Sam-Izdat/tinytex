@@ -9,15 +9,15 @@ class Smoothstep:
     """Smoothstep interpolation."""
     
     class Interpolant(IntEnum):
-        CUBIC_POLYNOMIAL            = 1<<1
-        QUARTIC_POLYNOMIAL          = 1<<2
-        QUINTIC_POLYNOMIAL          = 1<<3
-        QUADRATIC_RATIONAL          = 1<<4
-        CUBIC_RATIONAL              = 1<<5
-        RATIONAL                    = 1<<6
-        PIECEWISE_QUADRATIC         = 1<<7
-        PIECEWISE_POLYNOMIAL        = 1<<8
-        TRIGONOMETRIC               = 1<<9
+        CUBIC_POLYNOMIAL            = 1<<0
+        QUARTIC_POLYNOMIAL          = 1<<1
+        QUINTIC_POLYNOMIAL          = 1<<2
+        QUADRATIC_RATIONAL          = 1<<3
+        CUBIC_RATIONAL              = 1<<4
+        RATIONAL                    = 1<<5
+        PIECEWISE_QUADRATIC         = 1<<6
+        PIECEWISE_POLYNOMIAL        = 1<<7
+        TRIGONOMETRIC               = 1<<8
 
         INV_CUBIC_POLYNOMIAL        = 1<<10
         INV_QUARTIC_POLYNOMIAL      = 1<<11

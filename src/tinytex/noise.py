@@ -219,6 +219,7 @@ class Noise:
         tileable:tuple=(True, True)) -> np.ndarray:
         height, width = shape[0], shape[1]
         points = []
+        density = int(density)
         base = [[np.random.randint(0, height), np.random.randint(0, width)] for _ in range(density)]
         
         for h in range(3):

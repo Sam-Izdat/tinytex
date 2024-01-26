@@ -1,4 +1,5 @@
 import torch
+import torchvision.transforms.functional as TF
 import torch.nn.functional as F
 import numpy as np
 
@@ -55,9 +56,8 @@ class Resampling:
         """
         Tile image tensor to square dimensions of target size.
 
-        :param im: image tensor sized [C, H, W] or [N, C, H, W]
-        :return: padded image tensor sized [C, H, W] or [N, C, H, W] where H = W
-        ("_pt" because i/o is tensors, but uses numpy as torch complains if padding extends too far)
+        :param im: Image tensor sized [C, H, W] or [N, C, H, W].
+        :return: Padded image tensor sized [C, H, W] or [N, C, H, W] where H = W.
         """
         # Uses numpy for legacy reasons, but can be reworked to use torch tile method above.
         # F.pad won't tile the image to arbitrary size.
@@ -72,8 +72,31 @@ class Resampling:
         for i in range(im.shape[0]):
             h_tiles = int(np.ceil(target_size / np_image[i].shape[1]))
             v_tiles = int(np.ceil(target_size / np_image[i].shape[0]))
-            tiled_image[i] = np.tile(np_image[i], (v_tiles, h_tiles, 1))[:target_size, :target_size, :]            
+            tiled_image[i] = np.tile(np_image[i], (v_tiles, h_tiles, 1))[:target_size, :target_size, :]
         res = torch.from_numpy(tiled_image).permute(0, 3, 1, 2)
+        return res.squeeze(0) if nobatch else res
+
+    @classmethod
+    def crop(cls, im:torch.Tensor, shape:tuple, start:tuple=(0, 0)):
+        """
+        Crop image tensor to maximum target shape, if and only if a crop box target dimension 
+        is smaller than the boxed image dimension. Returned tensor can be smaller than target 
+        shape, depending on input image shape - i.e. no automatic padding.
+
+        :param im: Image tensor sized [C, H, W] or [N, C, H, W].
+        :param shape: Target shape as (height, width) tuple.
+        :param start: Top-left corner coordinates of the crop box as (top, left) tuple.
+        :return: Cropped image tensor sized [C, H, W] or [N, C, H, W].
+        """
+        ndim = len(im.size())
+        assert ndim == 3 or ndim == 4, cls.err_size
+        nobatch = ndim == 3
+        if nobatch: im = im.unsqueeze(0)
+        assert start[0] < im.size(2) and start[1] < im.size(2), \
+            "crop box start dimensions must be smaller than image dimensions"
+        H, W = min(im.size(2) - start[0], shape[0]), min(im.size(3) - start[1], shape[1])
+        if H == im.size(2) and W == im.size(3): return im.squeeze(0) if nobatch else im
+        res = TF.crop(im, top=start[0], left=start[1], height=H, width=W)
         return res.squeeze(0) if nobatch else res
 
     @classmethod
@@ -81,10 +104,10 @@ class Resampling:
         """
         Resize image tensor longest to target shape.
 
-        :param im: image tensor sized [C, H, W] or [N, C, H, W]
-        :param shape: target shape as (height, width) tuple
-        :param mode: resampleing algorithm ('nearest' | 'linear' | 'bilinear' | 'bicubic')
-        :return: resampled image tensor sized [C, H, W] or [N, C, H, W]
+        :param im: Image tensor sized [C, H, W] or [N, C, H, W].
+        :param shape: Target shape as (height, width) tuple.
+        :param mode: Resampleing algorithm ('nearest' | 'linear' | 'bilinear' | 'bicubic').
+        :return: Resampled image tensor sized [C, H, W] or [N, C, H, W].
         """
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size

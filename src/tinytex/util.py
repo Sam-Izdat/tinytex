@@ -44,7 +44,7 @@ def seed_everything(seed: int) -> bool:
     return True
 
 class _ProgressBar(tqdm):
-    """Provides `update_fit_status(n)` which uses `tqdm.update(delta_n)`."""
+    """Provides `update_status(n)` which uses `tqdm.update(delta_n)`."""
     def update_status(self, batches_done=1, steps_per_batch=1, steps_total=None, desc=''):
         if steps_total is not None: self.total = steps_total
         self.set_description(desc)
