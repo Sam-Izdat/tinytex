@@ -33,11 +33,14 @@ directory = 'out/atlas'
 atl2 = Atlas()
 atl = Atlas(auto_force_square=True)
 
-atlas, index = atl.pack_dir(dp=directory)
+atlas, index = atl2.pack_dir(dp=directory, max_width=1024, sort='area')
 fsio.save_image(atlas, 'out/atlas.png')
-atlas, index = Atlas.pack_dir(dp=directory, max_width=1024)
+atlas, index = Atlas.pack_dir(dp=directory)
 fsio.save_image(atlas, 'out/atlas2.png')
 print(atlas.size(), index)
+
+im = Atlas.sample(atlas, index, 0)
+fsio.save_image(im, 'out/sampled.png')
 
 
 exit()
