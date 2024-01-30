@@ -10,6 +10,42 @@ from tinycio import fsio
 
 from tinytex import *
 
+
+
+
+
+
+textures = {}
+rng = np.random.random
+
+import os
+directory = 'out/atlas'
+ 
+# for filename in os.listdir(directory):
+#     f = os.path.join(directory, filename)
+#     ext = os.path.splitext(filename)[1]
+#     if os.path.isfile(f) and (ext == '.png' or ext == '.jpg'):
+#     	im = fsio.truncate_image(fsio.load_image(f))
+#     	fnwe = os.path.splitext(os.path.basename(f))[0]
+#     	textures[fnwe] = im
+
+# Pack textures
+atl2 = Atlas()
+atl = Atlas(auto_force_square=True)
+
+atlas, index = atl.pack_dir(dp=directory)
+fsio.save_image(atlas, 'out/atlas.png')
+atlas, index = Atlas.pack_dir(dp=directory, max_width=1024)
+fsio.save_image(atlas, 'out/atlas2.png')
+print(atlas.size(), index)
+
+
+exit()
+
+
+
+
+
 # Example usage:
 # Assuming textures is a list of TextureRect objects
 
@@ -79,20 +115,6 @@ sdf = fsio.load_image('out/sdf_xxxx.png', graphics_format=fsio.GraphicsFormat.UI
 fsio.save_image(SDF.render(sdf, (512, 512), 0.399, 0.501, 0., 1.,mode='bicubic'), 'out/sdf_render.png')
 exit()
 
-# textures = []
-# rng = np.random.random
-
-# import os
-# directory = 'out/atlas'
- 
-# for filename in os.listdir(directory):
-#     f = os.path.join(directory, filename)
-#     ext = os.path.splitext(filename)[1]
-#     if os.path.isfile(f) and (ext == '.png' or ext == '.jpg'):
-#     	print(filename)
-#     	im = fsio.truncate_image(fsio.load_image(f))
-#     	textures.append(im)
-
 
 # for i in range(160):
 # 	rect = torch.ones(3, int(rng()*60), int(rng()*100))*torch.Tensor([[[rng()]], [[rng()]], [[rng()]]])
@@ -117,20 +139,6 @@ exit()
 # textures.append(torch.ones(3, 50, 50)*torch.Tensor([[[rng()]], [[rng()]], [[rng()]]]))
 # textures.append(torch.ones(3, 50, 50)*torch.Tensor([[[rng()]], [[rng()]], [[rng()]]]))
 
-
-# # Pack textures
-# atl2 = Atlas()
-# atl = Atlas(force_auto_square=True)
-
-# atlas, index = atl.pack(textures)
-# fsio.save_image(atlas, 'out/atlas.png')
-
-# atlas, index = Atlas.pack(textures)
-# fsio.save_image(atlas, 'out/atlas2.png')
-# print(atlas.size(), index)
-
-
-# exit()
 
 
 ted = fsio.load_image('out/atlas/zzzted.png')

@@ -1,7 +1,8 @@
+import os
 import torch
 import numpy as np
 import random
-
+import toml
 from tqdm import tqdm
 
 def closest_divisor(n:int, m:int) -> int: 
@@ -42,6 +43,16 @@ def seed_everything(seed: int) -> bool:
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     return True
+
+def save_toml_dict(data:dict, fp:str) -> bool:
+    with open(os.path.realpath(fp), 'w') as f:
+        toml.dump(data, f)
+    return True
+
+def load_toml_dict(fp:str) -> dict:
+    with open(os.path.realpath(fp), 'r') as f:
+        data = toml.load(f)
+    return data
 
 class _ProgressBar(tqdm):
     """Provides `update_status(n)` which uses `tqdm.update(delta_n)`."""

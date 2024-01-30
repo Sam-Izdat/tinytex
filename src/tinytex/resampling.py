@@ -16,9 +16,9 @@ class Resampling:
         """
         Tile image tensor to target shape.
 
-        :param im: image tensor sized [C, H, W] or [N, C, H, W]
-        :param shape: target shape as (height, width) tuple
-        :return: padded image tensor sized [C, H, W] or [N, C, H, W] where H = W
+        :param im: Image tensor sized [C, H, W] or [N, C, H, W].
+        :param shape: Target shape as (height, width) tuple.
+        :return: Padded image tensor sized [C, H, W] or [N, C, H, W].
         """
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size
@@ -117,7 +117,7 @@ class Resampling:
         return res.squeeze(0) if nobatch else res
 
     @classmethod
-    def resize_longest_edge(cls, im:torch.Tensor, target_size:int, mode:str='bilinear') -> torch.Tensor:
+    def resize_le(cls, im:torch.Tensor, target_size:int, mode:str='bilinear') -> torch.Tensor:
         """
         Resize image tensor by longest edge, constraining proportions.
 
@@ -131,19 +131,19 @@ class Resampling:
         nobatch = ndim == 3
         if nobatch: im = im.unsqueeze(0)
         H, W = im.shape[2:]
-        if max(H, W) == target_size: return im
+        if max(H, W) == target_size: return im.squeeze(0) if nobatch else im
         scale = target_size / max(H, W)
-        new_h = math.ceil(H * scale)
-        new_w = math.ceil(W * scale)
+        new_h = int(np.ceil(H * scale))
+        new_w = int(np.ceil(W * scale))
         res = F.interpolate(im, size=(new_h, new_w), mode=mode, align_corners=False)
         return res.squeeze(0) if nobatch else res
 
-    def resize_to_next_pot(im:torch.Tensor):
+    def resize_le_to_next_pot(im:torch.Tensor):
         """
         Resize image tensor by longest edge to next highest power-of-two, constraining proportions.
 
-        :param torch.tensor im: image tensor sized [N, C, H, W]
-        :return: resampled image tensor sized [N, C, H, W]
+        :param torch.tensor im: Image tensor sized [C, H, W] or [N, C, H, W].
+        :return: Resampled image tensor sized [C, H, W] or [N, C, H, W].
         """
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size
@@ -152,7 +152,7 @@ class Resampling:
         H, W = im.shape[2:]
         max_dim = max(H, W)
         s = next_pot(max_dim)
-        res = cls.resize_longest_edge(im, s)
+        res = cls.resize_le(im, s)
         return res.squeeze(0) if nobatch else res
 
     @classmethod
@@ -160,8 +160,9 @@ class Resampling:
         """
         Pad image tensor to target shape.
 
-        :param torch.Tensor im: image tensor sized [C, H, W] or [N, C, H, W]
-        :return: padded image tensor sized [C, H, W] or [N, C, H, W] where H = W
+        :param torch.Tensor im: Image tensor sized [C, H, W] or [N, C, H, W].
+        :param mode: Padding algorithm ('constant' | 'reflect' | 'replicate' | 'circular').
+        :return: Padded image tensor sized [C, H, W] or [N, C, H, W].
         """
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size
@@ -180,7 +181,6 @@ class Resampling:
             # Can't use torch pad, because dimensions won't allow it - fall back to manual repeat.
             padded_image = cls.tile_to_square(im.cpu(), size=size).to(im.device)
         else:
-            # Pad the image to the nearest power-of-two square
             padded_image = F.pad(im, padding, mode=mode, value=0)
 
         if nobatch: padded_image = padded_image.squeeze(0)
@@ -192,7 +192,7 @@ class Resampling:
         Pad image tensor to next highest power-of-two square dimensions.
 
         :param torch.Tensor im: image tensor sized [C, H, W] or [N, C, H, W]
-        :param mode: resampleing algorithm ('nearest' | 'linear' | 'bilinear' | 'bicubic')
+        :param mode: padding algorithm ('constant' | 'reflect' | 'replicate' | 'circular')
         :return: padded image tensor sized [C, H, W] or [N, C, H, W] where H = W
         """
         ndim = len(im.size())

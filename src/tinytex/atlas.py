@@ -3,7 +3,10 @@ import numpy as np
 
 from combomethod import combomethod
 
+from tinycio import fsio
+
 from .util import *
+from .resampling import Resampling
 
 class Atlas:
 
@@ -11,17 +14,18 @@ class Atlas:
 
     min_auto_size = 64
     max_auto_size = 8192
-    force_auto_square = False
+    auto_force_square = False
 
-    def __init__(self, min_auto_size=64, max_auto_size=8192, force_auto_square=False):
+    def __init__(self, min_auto_size=64, max_auto_size=8192, auto_force_square=False):
         self.min_auto_size = min_auto_size
         self.max_auto_size = max_auto_size
-        self.force_auto_square = force_auto_square
+        self.auto_force_square = auto_force_square
 
     class _TextureRect:
-        def __init__(self, tensor, idx):
+        def __init__(self, tensor, idx, key):
             self.tensor = tensor
             self.idx = idx
+            self.key = key
             self.x = 0
             self.y = 0
             self.was_packed = False
@@ -29,29 +33,66 @@ class Atlas:
     err_out_of_bounds = 'failed to to fit textures into atlas'
 
     @combomethod
-    def pack(cls, textures:list, width:int=0, height:int=0, row_pack:bool=False) -> (torch.Tensor, list):
-        if width == 0 or height == 0:
+    def pack(cls, 
+        textures:tuple, 
+        max_height:int=0, 
+        max_width:int=0, 
+        auto_crop:bool=True, 
+        row_pack:bool=False) -> (torch.Tensor, tuple):
+        H, W = max_height, max_width
+        auto_crop = auto_crop and not cls.auto_force_square
+        if W == 0 or H == 0:
             i = 0
-            auto_width, auto_height = width, height
+            auto_width, auto_height = W, H
             while auto_height < cls.max_auto_size and auto_width < cls.max_auto_size:
-                if cls.force_auto_square:
-                    auto_height = (height or int(next_pot(cls.min_auto_size)) << i)
-                    auto_width = (width or int(next_pot(cls.min_auto_size)) << i)
+                if cls.auto_force_square:
+                    auto_height = (H or int(next_pot(cls.min_auto_size)) << i)
+                    auto_width = (W or int(next_pot(cls.min_auto_size)) << i)
                 else:
-                    if height == 0 and (width != 0 or auto_width > auto_height):
-                        auto_height = (height or int(next_pot(cls.min_auto_size)) << i)
-                    elif width == 0 and (height != 0 or auto_height >= auto_width):
-                        auto_width = (width or int(next_pot(cls.min_auto_size)) << i)
+                    if H == 0 and (W != 0 or auto_width > auto_height):
+                        auto_height = (H or int(next_pot(cls.min_auto_size)) << i)
+                    elif W == 0 and (H != 0 or auto_height >= auto_width):
+                        auto_width = (W or int(next_pot(cls.min_auto_size)) << i)
                     else:
                         raise Exception('undefined') # should not happen
-                atlas, index = cls.__row_pack(textures, (auto_height, auto_width)) if row_pack \
-                    else cls.__rect_pack(textures, (auto_height, auto_width))
+                atlas, index = cls.__row_pack(textures, (auto_height, auto_width), auto_crop=auto_crop) if row_pack \
+                    else cls.__rect_pack(textures, (auto_height, auto_width), auto_crop=auto_crop)
                 if not atlas is False:
                     return atlas, index
                 i += 1
             raise Exception(cls.err_out_of_bounds + f" at w {auto_width} h {auto_height}")
-        return cls.__row_pack(textures, (height, width), must_succeed=True) if row_pack \
-            else cls.__rect_pack(textures, (height, width), must_succeed=True) 
+        return cls.__row_pack(textures, (H, W), auto_crop=auto_crop, must_succeed=True) if row_pack \
+            else cls.__rect_pack(textures, (H, W), auto_crop=auto_crop, must_succeed=True) 
+
+    @combomethod
+    def pack_dir(cls, 
+        dp:str, 
+        ext:str='.png', 
+        max_height:int=0, 
+        max_width:int=0, 
+        auto_crop:bool=True, 
+        row_pack:bool=False,
+        channels:int=3,
+        allow_channel_mismatch=True
+        ) -> (torch.Tensor, list):
+        """
+        Pack atlas with image files in directory. Images Base filenames will be used as keys. Non-recursive.
+        """
+        textures = {}
+        for fn in os.listdir(dp):
+            fp = os.path.join(dp, fn)
+            fnext = os.path.splitext(fn)[1]
+            if os.path.isfile(fp) and (fnext == ext):
+                im = fsio.load_image(fp)
+                if allow_channel_mismatch:
+                    if im.size(0) < channels: im = im.repeat(channels, 1, 1)
+                    if im.size(0) > channels: im = im[0:channels, ...]
+                else:
+                    assert channels == im.size(0), f"channel size mismatch for: {fn} - expected {channels}, got {im.size(0)}"
+                fnwe = os.path.splitext(os.path.basename(fp))[0]
+                textures[fnwe] = im
+        assert len(textures) > 0, "did not find any textures"
+        return cls.pack(textures=textures, max_height=max_height, max_width=max_width, auto_crop=auto_crop, row_pack=row_pack)
 
     @classmethod
     def __sp_push_back(cls, spaces, space):
@@ -64,10 +105,11 @@ class Atlas:
     # https://github.com/TeamHypersomnia/rectpack2D?tab=readme-ov-file#algorithm
     # A bit slower. Suitable for high variance.
     @classmethod
-    def __rect_pack(cls, textures, shape, must_succeed=False):
+    def __rect_pack(cls, textures, shape, auto_crop=True, must_succeed=False) -> (torch.Tensor, tuple):
         texture_rects = []
+        max_w, max_h = 0, 0
         for k, v in enumerate(textures):
-            texture_rects.append(cls._TextureRect(v, idx=k))
+            texture_rects.append(cls._TextureRect(textures[v], idx=v, key=k))
 
         atlas_height = shape[0]
         atlas_width = shape[1]
@@ -150,16 +192,23 @@ class Atlas:
 
         # Sort textures by input order
         texture_rects.sort(key=lambda tex: tex.idx)
-        index = [(tex.x, tex.y, tex.x+tex.tensor.size(2), tex.y+tex.tensor.size(1)) for tex in texture_rects]
+        index = {}
+        for tex in texture_rects: 
+            index[tex.key] = (tex.x, tex.y, tex.x+tex.tensor.size(2), tex.y+tex.tensor.size(1))
+            if (tex.x+tex.tensor.size(2)) > max_w: max_w = tex.x+tex.tensor.size(2)
+            if (tex.y+tex.tensor.size(1)) > max_h: max_h = tex.y+tex.tensor.size(1)
+
+        if auto_crop: atlas = Resampling.crop(atlas, (int(max_h), int(max_w)))
         return atlas, index                        
 
     # https://www.david-colson.com/2020/03/10/exploring-rect-packing.html
     # Faster. Suitable for low variance.
     @classmethod
-    def __row_pack(cls, textures, shape, must_succeed=False):
+    def __row_pack(cls, textures, shape, auto_crop=True, must_succeed=False) -> (torch.Tensor, tuple):
         texture_rects = []
+        max_w, max_h = 0, 0
         for k, v in enumerate(textures):
-            texture_rects.append(cls._TextureRect(v, idx=k))
+            texture_rects.append(cls._TextureRect(textures[v], idx=v, key=k))
 
         # Sort textures by height in descending order
         texture_rects.sort(key=lambda tex: tex.tensor.size(1), reverse=True)
@@ -189,7 +238,6 @@ class Atlas:
                     raise Exception(cls.err_out_of_bounds, + f" at w {atlas_width} h {atlas_height}")
                 else:
                     return False, False
-                # break
 
             # Set position texture
             tex.x = x_pos
@@ -208,6 +256,11 @@ class Atlas:
             tex.was_packed = True
 
         # Sort textures by input order
-        texture_rects.sort(key=lambda tex: tex.idx)
-        index = [(tex.x, tex.y, tex.x+tex.tensor.size(2), tex.y+tex.tensor.size(1)) for tex in texture_rects]
+        index = {}
+        for tex in texture_rects: 
+            index[tex.key] = (tex.x, tex.y, tex.x+tex.tensor.size(2), tex.y+tex.tensor.size(1))
+            if (tex.x+tex.tensor.size(2)) > max_w: max_w = tex.x+tex.tensor.size(2)
+            if (tex.y+tex.tensor.size(1)) > max_h: max_h = tex.y+tex.tensor.size(1)
+
+        if auto_crop: atlas = Resampling.crop(atlas, (max_h, max_w))
         return atlas, index
