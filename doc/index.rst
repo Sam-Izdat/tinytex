@@ -1,35 +1,23 @@
 tinytex
 =======
 
-A lightweight Python texture editing and generation library: surface processing, atlasing, tiling, signed distance fields, resampling and noise generation.
-
-
-TODO: polar, log-polar transform, wavelets, chromatic PSF & conv, SH
+A lightweight Python texture editing and texture synthesis library.
 
 This library can be used to:
 
 - resample images
-- create texture atlases
+- create and sample texture atlases
 - split textures into tiles and merge tile sets
-- seamlessly stitch textures with color or vector data
-
-    - tile set blending
-    - self-tiling 
-
-- compute/approximate surface geometry
-
-    - normals from height/displacement
-    - height/displacement from normals
-    - curvature
-
-- approximate occlusion
-
-    - screen space ambient occlusion 
-    - bent normals
-
+- seamlessly stitch textures with color or vector data for mutual or self-tiling
+- compute and render 2D signed distance fields
+- compute and approximate surface geometry (normals/displacement/curvature)
+- approximate occlusion and bent normals
 - blend normal maps
-- convert between specular-workflow and metallic-workflow PBR texture maps
 - generate tiling noise
+- generate tiling masks from texture atlases
+- transform images to and from log-polar coordinate space
+- convert images to and from Haar wavelet coefficients
+- point spread functions and approximate aperture diffraction
 
 Getting started
 ---------------
