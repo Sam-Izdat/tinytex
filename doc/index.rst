@@ -17,7 +17,7 @@ This library can be used to:
 - generate tiling masks from texture atlases
 - transform images to and from log-polar coordinate space
 - convert images to and from Haar wavelet coefficients
-- point spread functions and approximate aperture diffraction
+- compute chromatic point spread functions and approximate aperture diffraction
 
 Getting started
 ---------------
