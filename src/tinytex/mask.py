@@ -5,28 +5,23 @@ import random
 from tinycio import fsio
 from tinytex import Resampling
 
-def overlay_generator(atlas, index, shape, scale, samples):
-    block_size = 256
-    # Get a list of file paths in the folder
-    overlay_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path)]
+from .atlas import Atlas
 
-    # Initialize the output image tensor
-    output_size = (1, shape[0], shape[1])
+def overlay_generator(atlas, index, shape, scale=1.0, samples=2):
+    """
+    Generate a tiling mask by randomly sampling a texture atlas.
+    """
+    block_size = 256
+
+    output_size = (atlas.size(0), shape[0], shape[1])
     output_image = torch.zeros(output_size)
 
-    # Calculate the number of overlays based on density
     num_overlays = int(((shape[0] * shape[1]) / scale / block_size**2) * samples)
 
-    # Generate random positions, shapes, and rotations for overlays
     for _ in range(num_overlays):
-        # Randomly choose a file path
-        # overlay_file = random.choice(overlay_files)
-        rand_key = random.choice(list(index.keys()))
-        overlay_idx = index[rand_key]
-        # overlay_file = atlas[random_key]
 
         # Load the overlay texture
-        overlay_texture = fsio.load_image(overlay_file)[3:4,...]
+        overlay_texture = Atlas.sample_random(atlas, index)
         overlay_size = overlay_texture.size()[1:]
         overlay_texture = Resampling.resize_le(overlay_texture, max(overlay_size[0], overlay_size[1]) * scale)
         overlay_size = overlay_texture.size()[1:]
@@ -67,19 +62,4 @@ def overlay_generator(atlas, index, shape, scale, samples):
                 output_image[:, 0:wrap_height, 0:wrap_width] += \
                     overlay_texture[:, overlay_size[0]-wrap_height:overlay_size[0], overlay_size[1]-wrap_width:overlay_size[1]]
 
-
-    # Ensure values are within the valid range (0, 1)
-    output_image = torch.clamp(output_image, 0, 1)
-
     return output_image
-
-# # Save the resulting image
-# fsio.save_image(output_image, save_path)
-
-# # Example usage:
-# shape = (512, 512)
-# samples = 4.5 # Adjust as needed
-# scale = 1.
-# folder_path = './spots'
-# save_path = './out/res.png'
-# overlay_generator(shape, scale, samples, folder_path, save_path)

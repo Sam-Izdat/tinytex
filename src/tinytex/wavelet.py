@@ -3,7 +3,7 @@ import torch
 class Wavelet:
 
     """Wavelet transforms."""
-    
+
     # See Emil Mikulic's implementation: https://unix4lyfe.org/haar/
 
     scale = torch.sqrt(torch.tensor(2.0))
@@ -21,14 +21,14 @@ class Wavelet:
         return torch.cat((cls.haar(mid), side), dim=0)
 
     @classmethod
-    def ihaar(cls, a:torch.Tensor) -> torch.Tensor:
+    def inverse_haar(cls, a:torch.Tensor) -> torch.Tensor:
         """
         1D inverse Haar transform.
         """
         l = a.size(0) 
         if l == 1: return a.clone()
         assert l % 2 == 0, "length needs to be even"
-        mid = cls.ihaar(a[0:l//2]) * cls.scale
+        mid = cls.inverse_haar(a[0:l//2]) * cls.scale
         side = a[l//2:] * cls.scale
         out = torch.zeros(a.size(0), dtype=torch.float32)
         out[0::2] = (mid + side) / 2.
@@ -48,15 +48,15 @@ class Wavelet:
         return cols
 
     @classmethod
-    def ihaar_2d(cls, coeffs:torch.Tensor) -> torch.Tensor:
+    def inverse_haar_2d(cls, coeffs:torch.Tensor) -> torch.Tensor:
         """
         2D inverse Haar transform.
         """
         h, w = coeffs.shape
         cols = torch.zeros(coeffs.shape, dtype=torch.float32)
-        for x in range(w): cols[:, x] = cls.ihaar(coeffs[:, x])
+        for x in range(w): cols[:, x] = cls.inverse_haar(coeffs[:, x])
         rows = torch.zeros(coeffs.shape, dtype=torch.float32)
-        for y in range(h): rows[y] = cls.ihaar(cols[y])
+        for y in range(h): rows[y] = cls.inverse_haar(cols[y])
         return rows
 
     @classmethod

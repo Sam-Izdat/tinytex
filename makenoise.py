@@ -42,6 +42,9 @@ print(atlas.size(), index)
 im = Atlas.sample(atlas, index, 0)
 fsio.save_image(im, 'out/sampled.png')
 
+mask = overlay_generator(atlas, index, (1024, 1024), samples=12.)
+fsio.save_image(mask, 'out/mask.png')
+
 
 exit()
 

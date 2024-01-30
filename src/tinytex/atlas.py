@@ -112,7 +112,7 @@ class Atlas:
             raise KeyError("key not found in index")
 
     @combomethod
-    def sample_rand(cls, atlas:torch.Tensor, index:dict):
+    def sample_random(cls, atlas:torch.Tensor, index:dict):
         assert len(index) > 0, "index is empty"
         x0, y0, x1, y1 = random.choice(list(index.values()))
         return atlas[:, int(y0):int(y1), int(x0):int(x1)]

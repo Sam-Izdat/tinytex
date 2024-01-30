@@ -7,7 +7,7 @@ class Warping:
     """Warping and coordinate system translation."""
 
     @classmethod
-    def polar(cls, im:torch.Tensor, start_from:int=1) -> torch.Tensor:
+    def log_polar(cls, im:torch.Tensor, start_from:int=1) -> torch.Tensor:
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size
         nobatch = ndim == 3
@@ -33,7 +33,7 @@ class Warping:
         return log_polar_image.squeeze(0) if nobatch else log_polar_image
 
     @classmethod
-    def ipolar(cls, im:torch.Tensor) -> torch.Tensor:
+    def inverse_log_polar(cls, im:torch.Tensor) -> torch.Tensor:
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size
         nobatch = ndim == 3
