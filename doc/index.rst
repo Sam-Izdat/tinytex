@@ -7,7 +7,7 @@ This library can be used to:
 
 - resample images
 - create and sample texture atlases
-- split textures into tiles and merge tile sets
+- split and merge tiles
 - seamlessly stitch textures with color or vector data for mutual or self-tiling
 - compute and render 2D signed distance fields
 - compute and approximate surface geometry (normals/displacement/curvature)
