@@ -31,7 +31,8 @@ class Geometry:
         :param recompute_z: Discard and recompute normals' z-channel before conversion.
         :param normalize: Normalize vectors before conversion.
         :param rescaled: Input and returned tensors should be in [0, 1] value range.
-        :return: Scaled z-axis and y-axis angles tensor sized [N, C=2, H, W] or [C=2, H, W].
+        :return: Scaled z-axis and y-axis angles tensor sized [N, C=2, H, W] or [C=2, H, W], 
+            in range [0, 1].
         """
         ndim = len(normal_map.size())
         assert ndim == 3 or ndim == 4, cls.err_size
@@ -67,7 +68,8 @@ class Geometry:
         """
         Convert scaled spherical coordinates to tangent-space normal vectors.
 
-        :param angle_map: Scaled spherical coordinates tensor sized [N, C=2, H, W] or [C=2, H, W].
+        :param angle_map: Scaled spherical coordinates tensor sized [N, C=2, H, W] or [C=2, H, W],
+            in range [0, 1].
         :param reompute_z: Discard and recompute normal map's z-channel after conversion.
         :param normalize: Normalize vectors after conversion.
         :param rescaled: Input and returned tensors should be in [0, 1] value range.

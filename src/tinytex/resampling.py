@@ -26,6 +26,7 @@ class Resampling:
         if nobatch: im = im.unsqueeze(0)
         new_H, new_W = shape[0], shape[1]
         H, W = im.shape[2:]
+        if H == new_H and W == new_W: return im.squeeze(0) if nobatch else im
         assert H < new_H and W < new_W, "target shape must be larger than input shape"
         h_tiles = (new_H // H) + 1
         w_tiles = (new_W // W) + 1
@@ -156,9 +157,9 @@ class Resampling:
         return res.squeeze(0) if nobatch else res
 
     @classmethod
-    def pad(cls, im:torch.Tensor, shape:tuple, mode:str='bilinear') -> torch.Tensor:
+    def pad_rb(cls, im:torch.Tensor, shape:tuple, mode:str='bilinear') -> torch.Tensor:
         """
-        Pad image tensor to target shape.
+        Pad image tensor to the right and bottom to target shape.
 
         :param torch.Tensor im: Image tensor sized [C, H, W] or [N, C, H, W].
         :param mode: Padding algorithm ('constant' | 'reflect' | 'replicate' | 'circular').
@@ -179,7 +180,7 @@ class Resampling:
         if (H < th / 2. or W < tw / 2.) and (mode == "circular" or mode == "reflect"): 
             if mode == "reflect": raise Exception("target size too big for reflect mode")
             # Can't use torch pad, because dimensions won't allow it - fall back to manual repeat.
-            padded_image = cls.tile_to_square(im.cpu(), size=size).to(im.device)
+            padded_image = cls.tile(im.cpu(), shape=shape).to(im.device)
         else:
             padded_image = F.pad(im, padding, mode=mode, value=0)
 
@@ -201,6 +202,6 @@ class Resampling:
         if nobatch: im = im.unsqueeze(0)
         H, W = im.shape[2:]
         size = next_pot(max(H, W))
-        padded_image = cls.pad(im, shape=(size, size), mode=mode)
+        padded_image = cls.pad_rb(im, shape=(size, size), mode=mode)
         if nobatch: padded_image = padded_image.squeeze(0)
         return padded_image

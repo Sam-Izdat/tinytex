@@ -21,8 +21,8 @@ class SDF:
         im:torch.Tensor, 
         tiling:bool=True, 
         length_factor:float=0.1, 
-        threshold=None,
-        tile_to=None) -> torch.Tensor:
+        threshold:float=None,
+        tile_to:tuple=None) -> torch.Tensor:
         H, W = im.shape[1:]
         if tile_to is not None: assert max(H, W) <= tile_to, err_tile
         if threshold is not None: im = (im > threshold)
@@ -44,7 +44,7 @@ class SDF:
         edge1:float=0.498, 
         value0:float=0., 
         value1:float=1.,
-        interpolant='quintic_polynomial',
+        interpolant:str='quintic_polynomial',
         mode:str='bilinear'):
         H, W = shape[0], shape[1]
         sdf = Resampling.resize(sdf, (H, W), mode=mode)
@@ -54,11 +54,11 @@ class SDF:
         return render
 
     @classmethod
-    def min(cls, sdf1, sdf2):
+    def min(cls, sdf1:torch.Tensor, sdf2:torch.Tensor):
         return torch.minimum(sdf1, sdf2)
 
     @classmethod
-    def max(cls, sdf1, sdf2):
+    def max(cls, sdf1:torch.Tensor, sdf2:torch.Tensor):
         return torch.maximum(sdf1, sdf2)
 
     @classmethod
