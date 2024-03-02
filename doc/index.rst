@@ -38,8 +38,7 @@ Release version
 - imageio >=2.9 (with PNG-FI FreeImage plugin)
 - tqdm >=4.64
 - toml >=0.10
-
-.. rubric:: Optional requirements
+- tinycio
 
 .. rubric:: License
 
@@ -83,6 +82,9 @@ Special thanks
     :caption: Sibling projects:
     :hidden:
 
-    tinylcm <https://sam-izdat.github.io/tinylcm-docs/>
-    tinypbr <https://sam-izdat.github.io/tinypbr-docs/>
     tinycio <https://sam-izdat.github.io/tinycio-docs/>
+    tinypbr <https://sam-izdat.github.io/tinypbr-docs/>
+    tinylcm <https://sam-izdat.github.io/tinylcm-docs/>
+    tinysimi <https://sam-izdat.github.io/tinysimi-docs/>
+    tinytrace <https://sam-izdat.github.io/tinytrace-docs/>
+    tinyraster <https://sam-izdat.github.io/tinyraster-docs/>

@@ -8,6 +8,8 @@ from tinytex import Resampling
 from .atlas import Atlas
 
 class MaskGenerator:
+    
+    block_size = 256
 
     def __init__(self, atlas, index):
         self.atlas = atlas
@@ -17,12 +19,11 @@ class MaskGenerator:
         """
         Generate tiling mask by randomly sampling the texture atlas and randomly positioning textures on the canvas.
         """
-        block_size = 256
 
         output_size = (self.atlas.size(0), shape[0], shape[1])
         output_image = torch.zeros(output_size)
 
-        num_overlays = int(((shape[0] * shape[1]) / scale / block_size**2) * samples)
+        num_overlays = int(((shape[0] * shape[1]) / scale / cls.block_size**2) * samples)
 
         for _ in range(num_overlays):
 

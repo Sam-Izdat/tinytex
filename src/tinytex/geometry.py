@@ -6,6 +6,7 @@ import typing
 from typing import Union
 
 from .util import *
+from .resampling import Resampling
 
 class Geometry:
     """
@@ -209,6 +210,7 @@ class Geometry:
         if rescaled: normal_map = normal_map * 2. - 1.
         device = normal_map.device
         N, _, H, W = normal_map.size()
+
         res_disp, res_scale = [], []
         for i in range(N):
             vec = normal_map[i]
@@ -247,7 +249,7 @@ class Geometry:
             res_scale.append(torch.tensor(scale).unsqueeze(0))
 
         res_disp = torch.cat(res_disp, dim=0)
-        res_scale = torch.cat(res_scale, dim=0)
+        res_scale = torch.cat(res_scale, dim=0).unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).to(res_disp.device)
         if nobatch:
             res_disp = res_disp.squeeze(0)
             res_scale = res_scale.squeeze(0)

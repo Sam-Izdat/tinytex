@@ -7,15 +7,18 @@ class Warping:
     """Warping and coordinate system translation."""
 
     @classmethod
-    def log_polar(cls, im:torch.Tensor, start_from:int=1) -> torch.Tensor:
+    def log_polar(cls, im:torch.Tensor, start_from:int=1, n_angular=None, n_radial=None) -> torch.Tensor:
+        assert start_from > 0, "must start from 1 or greater"
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size
         nobatch = ndim == 3
         if nobatch: im = im.unsqueeze(0)
         N, C, H, W = im.size()
+        H = n_angular or H
+        W = n_radial or W
         center = (W // 2, H // 2)
 
-        max_radius = np.sqrt(center[0]**2 + center[1]**2) 
+        max_radius = np.sqrt(center[0]**2 + center[1]**2) - 1
         min_radius = start_from
 
         rho, theta = torch.meshgrid(
@@ -26,7 +29,6 @@ class Warping:
         xx = (center[0] + torch.exp(rho) * torch.cos(theta)) / W * 2. - 1.
         yy = (center[1] + torch.exp(rho) * torch.sin(theta)) / H * 2. - 1.
 
-        # Interpolate image using grid_sample
         grid = torch.stack([xx, yy], dim=-1).unsqueeze(0)
         log_polar_image = F.grid_sample(im, grid, align_corners=True)
 
@@ -52,7 +54,6 @@ class Warping:
         xx = (rho / np.log(max_radius)) * 2. - 1.
         yy = ((theta + np.pi) / (np.pi * 2)) * 2. - 1.
 
-        # Interpolate image using grid_sample
         grid = torch.stack([xx, yy], dim=-1).unsqueeze(0)
         inverse_log_polar_image = F.grid_sample(im, grid, align_corners=True)
 

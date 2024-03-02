@@ -72,7 +72,7 @@ class Tiling:
         return top, right, bottom, left
 
     @classmethod
-    def split(cls, im:torch.Tensor, tile_size:int) -> (torch.Tensor, int, int):
+    def split(cls, im:torch.Tensor, shape:tuple) -> (torch.Tensor, int, int):
         """
         Split image tensor into non-overlapping square tiles. 
         Tiles are ordered left-to-right and top-to-bottom:
@@ -92,7 +92,7 @@ class Tiling:
             image will be effectively cropped, based on how many tiles can fit.
 
         :param im: Image tensor sized [N=1, C, H, W] or [C, H, W].
-        :param tile_size: Tile size (height/width) in pixels.
+        :param shape: Tile shape (height, width) in pixels.
         :return: Image tensor sized [N, C, H, W], number of rows, number of columns.
         """
         ndim = len(im.size())
@@ -100,11 +100,11 @@ class Tiling:
         if ndim == 3: im = im.unsqueeze(0)
         C, H, W = im.shape[1:]
 
-        rows = H // tile_size
-        cols = W // tile_size
+        rows = H // shape[0] #tile_size
+        cols = W // shape[1] #tile_size
 
-        im_tiles = im.unfold(2, tile_size, tile_size).unfold(3, tile_size, tile_size)
-        im_tiles = im_tiles.permute(0, 2, 3, 1, 4, 5).reshape(-1, C, tile_size, tile_size)
+        im_tiles = im.unfold(2, shape[0], shape[0]).unfold(3, shape[0], shape[1])
+        im_tiles = im_tiles.permute(0, 2, 3, 1, 4, 5).reshape(-1, C, shape[0], shape[1])
         tiles = torch.cat([tile.unsqueeze(0) for tile in im_tiles], dim=0)
 
         return tiles, rows, cols

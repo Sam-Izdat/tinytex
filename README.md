@@ -19,11 +19,8 @@
 # Requirements
 
 - toml >=0.10
-
-
-# Optional requirements
-
 - PyTorch >=2.0 (earlier versions untested)
 - NumPy >=1.21
 - imageio >=2.9 (with PNG-FI FreeImage plugin)
 - tqdm >=4.64
+- tinycio
