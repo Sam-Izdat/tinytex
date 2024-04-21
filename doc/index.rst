@@ -1,7 +1,7 @@
 tinytex
 =======
 
-A lightweight Python texture editing and texture synthesis library for PyTorch-involved projects.
+Python texture sampling, processing and synthesis library for PyTorch-involved projects.
 
 This library can be used to:
 
@@ -44,12 +44,6 @@ Release version
 .. rubric:: License
 
 :doc:`MIT License <source/license>` on all original code - see source for details
-
-
-Limitations
---------------
-
-This library was not made to be differentiable and has not been tested for differentiable rendering.
 
 Special thanks
 --------------

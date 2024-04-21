@@ -40,8 +40,8 @@ class Resampling:
         Tile image tensor by number of repetitions.
 
         :param im: Image tensor sized [C, H, W] or [N, C, H, W]
-        :param repeat_h: Times to repeat height vertically.
-        :param repeat_w: Times to repeat width horizontally.
+        :param repeat_h: Number of times to repeat image vertically.
+        :param repeat_w: Number of times to repeat image horizontally.
         :return: Padded image tensor sized [C, H, W] or [N, C, H, W].
         """
         ndim = len(im.size())

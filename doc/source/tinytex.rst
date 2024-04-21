@@ -6,7 +6,7 @@ API Reference
     .. autosummary::
         .. :toctree: _autosummarry
 
-
+        Resampling
         Atlas
         Geometry
         Smoothstep
@@ -18,6 +18,10 @@ API Reference
         Diffraction
         TiSampler2D
         TiTexture2D
+
+    .. autoclass:: Resampling
+        :members:
+        :show-inheritance:
 
     .. autoclass:: Atlas
         :members:
