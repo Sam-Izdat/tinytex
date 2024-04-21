@@ -1,7 +1,7 @@
 """
 titexture
 =================================
-Taichi texture sampling module for CPU, CUDA and Vulkan.
+Taichi texture sampling module. Supports CPU, CUDA and Vulkan backends.
  """
 
 import typing
@@ -852,7 +852,7 @@ class TiTexture2D:
             self.__populate_prepared(im)
 
     def __del__(self):
-        if self.fb_snode_tree: 
+        if self.fb_snode_tree and not self.fb_snode_tree.destroy is None: 
             self.fb_snode_tree.destroy()
             
     def populate(self, im:Union[torch.Tensor, np.ndarray, float, tm.vec2, tm.vec3, tm.vec4]):
