@@ -176,9 +176,9 @@ class Geometry:
             dx = (torch.roll(height_map, -1, dims=3) - torch.roll(height_map, 1, dims=3))
             dy = (torch.roll(height_map, 1, dims=2) - torch.roll(height_map, -1, dims=2))
             z = torch.ones_like(dx)
-            nom = torch.cat([dx, dy, z], dim=1)
-            denom = torch.sqrt(torch.sum(nom ** 2, dim=1, keepdim=True) + eps)
-            n = nom / denom
+            num = torch.cat([dx, dy, z], dim=1)
+            denom = torch.sqrt(torch.sum(num ** 2, dim=1, keepdim=True) + eps)
+            n = num / denom
             normals.append(n)
 
         normals = torch.cat(normals, dim=0)
@@ -235,9 +235,9 @@ class Geometry:
             gx = torch.fft.fft2(-nx)
             gy = torch.fft.fft2(ny)
 
-            nom = (-1j * u * gx) + (-1j * v * gy)
+            num = (-1j * u * gx) + (-1j * v * gy)
             denom = (u**2) + (v**2) + eps
-            zf = nom / denom
+            zf = num / denom
             zf[0, 0] = 0.0
 
             z = torch.real(torch.fft.ifft2(zf))
