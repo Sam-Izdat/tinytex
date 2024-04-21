@@ -15,15 +15,17 @@ import numpy as np
 from enum import IntEnum    
 
 class FilterMode(IntEnum):
+    """Texture filter mode"""
     NEAREST     = 1<<0
     BILINEAR    = 1<<1
     TRILINEAR   = 1<<2
-    BICUBIC     = 1<<3
+    B_SPLINE    = 1<<3
 
-    SUPPORTED_2D = NEAREST | BILINEAR | BICUBIC
+    SUPPORTED_2D = NEAREST | BILINEAR | B_SPLINE
     SUPPORTED_3D = NEAREST | TRILINEAR
 
 class WrapMode(IntEnum):
+    """Texture wrap mode"""
     REPEAT      = 1<<0
     CLAMP       = 1<<1
     REPEAT_X    = 1<<2
@@ -522,7 +524,14 @@ def sample_indexed_bilinear(
 
 @ti.data_oriented
 class TiSampler2D:
-    """Taichi 2D texture sampler."""
+    """
+    Taichi 2D texture sampler.
+
+    :param tile_x: Number of times to tile texture horizontally.
+    :param tile_y: Number of times to tile texture vertically.
+    :param filter_mode: Filter mode.
+    :param wrap_mode: Wrap mode.
+    """
     def __init__(self, 
         tile_x:int=1, 
         tile_y:int=1, 
@@ -656,7 +665,7 @@ class TiSampler2D:
         Sample texture at uv coordinates.
         
         :param tex: Texture to sample.
-        :type tex: taichi.template()
+        :type tex: TiTexture2D
         :param uv: UV coordinates.
         :type uv: taichi.math.vec2
         :return: Sampled texel, subject to filter mode interpolation.
@@ -676,7 +685,7 @@ class TiSampler2D:
         Sample texture at uv coordinates at specified mip level.
 
         :param tex: Texture to sample.
-        :type tex: taichi.template()
+        :type tex: TiTexture2D
         :param uv: UV coordinates.
         :type uv: taichi.math.vec2
         :param lod: Level of detail.
@@ -758,7 +767,7 @@ class TiSampler2D:
         """Fetch texel at indexed xy location.
         
         :param tex: Texture to sample.
-        :type tex: taichi.template()
+        :type tex: TiTexture2D
         :param xy: xy index.
         :type xy: taichi.math.ivec2
         :return: Sampled texel.
@@ -774,38 +783,19 @@ class TiSampler2D:
             return self._fetch_rgba(tex, xy)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @ti.data_oriented
 class TiTexture2D:
-    """Taichi 2D read-write texture."""
+    """
+    Taichi 2D read-write texture.
+
+    :param im: Tuple sized (C, H, W) indicating texture shape or image data as [C, H, W] sized 
+        PyTorch tensor, NumPy array, Taichi vector or scalar value.
+    :type im: tuple | torch.Tensor | numpy.ndarray | float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+    :param generate_mips: Generate mipmaps.
+    :param flip_y: Flip y-coordinate before populating.
+    """
     def __init__(self, 
-        im:Union[torch.Tensor, tuple],
+        im:Union[tuple, torch.Tensor, np.ndarray, float, tm.vec2, tm.vec3, tm.vec4],
         generate_mips:bool=False,
         flip_y:bool=False
         ):
@@ -861,13 +851,17 @@ class TiTexture2D:
         if torch.is_tensor(im): 
             self.__populate_prepared(im)
 
-    # def __del__(self):
-    #     if self.fb_snode_tree: 
-    #         self.fb_snode_tree.destroy()
+    def __del__(self):
+        if self.fb_snode_tree: 
+            self.fb_snode_tree.destroy()
             
-    def populate(self, im:Union[torch.Tensor, np.ndarray, ti.types.vector, float]):
+    def populate(self, im:Union[torch.Tensor, np.ndarray, float, tm.vec2, tm.vec3, tm.vec4]):
         """
-        Populate texture with a [C, H, W] sized PyTorch tensor, NumPy array, Taichi vector or scalar value.
+        Populate texture with [C, H, W] sized PyTorch tensor, NumPy array, Taichi vector or scalar value.
+
+
+        :param im: Image data as [C, H, W] sized PyTorch tensor, NumPy array, Taichi vector or scalar value.
+        :type im: torch.Tensor | numpy.ndarray | float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
         """
         assert self.channels == _count_channels(im), f"image tensor must have {self.channels} channels; got {_count_channels(im)}"
         if self.channels == 1:      
