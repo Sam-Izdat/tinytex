@@ -1,5 +1,5 @@
 """
-texture
+titexture
 =================================
 Taichi backend-independent texture sampling module
  """
