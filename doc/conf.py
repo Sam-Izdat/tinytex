@@ -69,7 +69,7 @@ html_css_files = [
 ]
 
 # autodoc_mock_imports = ["torch", "torchvision", "numpy", "scipy", "taichi"]
-autodoc_mock_imports = ["torch", "torchvision", "scipy", "taichi"]
+autodoc_mock_imports = ["torch", "torchvision", "scipy"]
 
 html_show_sphinx = False
 html_show_copyright = False

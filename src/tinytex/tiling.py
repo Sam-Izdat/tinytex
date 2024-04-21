@@ -145,8 +145,8 @@ class Tiling:
         tiles:torch.Tensor, 
         rows:int=1, 
         cols:int=1, 
-        wrap=True, 
-        vector_data=False) -> torch.Tensor:
+        wrap:bool=True, 
+        vector_data:bool=False) -> torch.Tensor:
         """
         Blend tiles to remove seams.
 

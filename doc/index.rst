@@ -18,6 +18,7 @@ This library can be used to:
 - transform images to and from log-polar coordinate space
 - convert images to and from Haar wavelet coefficients
 - compute chromatic point spread functions and approximate aperture diffraction
+- sample textures with Taichi (installed with Taichi optional requirement)
 
 Getting started
 ---------------

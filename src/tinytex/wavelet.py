@@ -72,8 +72,7 @@ class Wavelet:
         """
         Keep only the strongest Haar coefficients by magnitude.
 
-        :param a: Haar wavelet coefficients tensor sized [F] or [N, F], where N is batch count 
-        and F is coefficient count.
+        :param a: Haar wavelet coefficients tensor sized [F] or [N, F], where N is batch count and F is coefficient count.
         :param ratio: Ratio of coefficients to cull, in range [0, 1].
         """
 
@@ -96,8 +95,7 @@ class Wavelet:
         """
         Keep only the strongest Haar coefficients in a 2D image by area-weighted magnitude.
 
-        :param a: 2D Haar wavelet coefficients tensor sized [H, W] or [N, H, W], where N is batch count, 
-        H is height and W is width.
+        :param a: 2D Haar wavelet coefficients tensor sized [H, W] or [N, H, W], where N is batch count, H is height and W is width.
         :param ratio: Ratio of coefficients to cull, in range [0, 1].
         """
         ndim = len(a.size())

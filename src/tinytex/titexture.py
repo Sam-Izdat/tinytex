@@ -4,13 +4,14 @@ titexture
 Taichi backend-independent texture sampling module
  """
 
+import typing
+from typing import Union
+
 import taichi as ti
 import taichi.math as tm
 
 import torch
 import numpy as np
-import typing
-from typing import Union
 from enum import IntEnum    
 
 class FilterMode(IntEnum):
@@ -521,6 +522,7 @@ def sample_indexed_bilinear(
 
 @ti.data_oriented
 class TiSampler2D:
+    """Taichi 2D texture sampler."""
     def __init__(self, 
         tile_x:int=1, 
         tile_y:int=1, 
@@ -650,6 +652,16 @@ class TiSampler2D:
 
     @ti.func
     def sample(self, tex:ti.template(), uv:tm.vec2):
+        """
+        Sample texture at uv coordinates.
+        
+        :param tex: Texture to sample.
+        :type tex: taichi.template()
+        :param uv: UV coordinates.
+        :type uv: taichi.math.vec2
+        :return: Sampled texel, subject to filter mode interpolation.
+        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+        """
         window = tm.ivec4(0, 0, tex.width, tex.height)
         # "out" variable must be here or things break.
         # We can't return directly on Linux or taking e.g. `sample(...).rgb` will throw:
@@ -660,6 +672,18 @@ class TiSampler2D:
 
     @ti.func
     def sample_lod(self, tex:ti.template(), uv:tm.vec2, lod:float):
+        """
+        Sample texture at uv coordinates at specified mip level.
+
+        :param tex: Texture to sample.
+        :type tex: taichi.template()
+        :param uv: UV coordinates.
+        :type uv: taichi.math.vec2
+        :param lod: Level of detail.
+        :type lod: float
+        :return: Sampled texel, subject to filter mode interpolation.
+        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+        """
         if ti.static(tex.channels == 1):
             out = 0.
             if tex.max_mip == 0:
@@ -731,6 +755,15 @@ class TiSampler2D:
 
     @ti.func
     def fetch(self, tex:ti.template(), xy:tm.ivec2):
+        """Fetch texel at indexed xy location.
+        
+        :param tex: Texture to sample.
+        :type tex: taichi.template()
+        :param xy: xy index.
+        :type xy: taichi.math.ivec2
+        :return: Sampled texel.
+        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+        """
         if ti.static(tex.channels == 1):
             return self._fetch_r(tex, xy)
         if ti.static(tex.channels == 2):
@@ -770,6 +803,7 @@ class TiSampler2D:
 
 @ti.data_oriented
 class TiTexture2D:
+    """Taichi 2D read-write texture."""
     def __init__(self, 
         im:Union[torch.Tensor, tuple],
         generate_mips:bool=False,
@@ -831,7 +865,10 @@ class TiTexture2D:
     #     if self.fb_snode_tree: 
     #         self.fb_snode_tree.destroy()
             
-    def populate(self, im:torch.Tensor):
+    def populate(self, im:Union[torch.Tensor, np.ndarray, ti.types.vector, float]):
+        """
+        Populate texture with a [C, H, W] sized PyTorch tensor, NumPy array, Taichi vector or scalar value.
+        """
         assert self.channels == _count_channels(im), f"image tensor must have {self.channels} channels; got {_count_channels(im)}"
         if self.channels == 1:      
             im = _prep_r(im, self.flip_y)
@@ -871,6 +908,8 @@ class TiTexture2D:
         if self.generate_mips: self.regenerate_mips()
 
     def to_tensor(self):
+        """Return texture as [C, H, W] sized PyTorch image tensor."""
+
         return self.field.to_torch().permute(2, 0, 1)[:, 0:self.height, 0:self.width]    
 
     # def _regenerate_mips_torch(self):
@@ -934,6 +973,14 @@ class TiTexture2D:
 
     @ti.func
     def store(self, val:ti.template(), xy:tm.ivec2):
+        """
+        Store value in texture at indexed xy location.
+
+        :param val: Value to store.
+        :type val: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+        :param xy: xy index.
+        :type xy: taichi.math.ivec2
+        """
         if ti.static(self.channels == 1):
             self._store_r(val, xy)
         elif ti.static(self.channels == 2):

@@ -16,6 +16,8 @@ API Reference
         Wavelet
         Warping
         Diffraction
+        TiSampler2D
+        TiTexture2D
 
     .. autoclass:: Atlas
         :members:
@@ -50,5 +52,13 @@ API Reference
         :show-inheritance:
 
     .. autoclass:: Diffraction
+        :members:
+        :show-inheritance:
+
+    .. autoclass:: TiSampler2D
+        :members:
+        :show-inheritance:
+
+    .. autoclass:: TiTexture2D
         :members:
         :show-inheritance:
