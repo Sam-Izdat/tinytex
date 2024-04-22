@@ -16,8 +16,6 @@ API Reference
         Wavelet
         Warping
         Diffraction
-        TiSampler2D
-        TiTexture2D
 
     .. autoclass:: Resampling
         :members:
@@ -59,10 +57,7 @@ API Reference
         :members:
         :show-inheritance:
 
-    .. autoclass:: TiSampler2D
-        :members:
-        :show-inheritance:
+.. toctree::
+    :maxdepth: 4
 
-    .. autoclass:: TiTexture2D
-        :members:
-        :show-inheritance:
+    ti

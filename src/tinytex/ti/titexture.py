@@ -523,7 +523,7 @@ def sample_indexed_bilinear(
 
 
 @ti.data_oriented
-class TiSampler2D:
+class Sampler2D:
     """
     Taichi 2D texture sampler.
 
@@ -545,9 +545,9 @@ class TiSampler2D:
 
         # a few reasons to abort
         if not (self.filter_mode & FilterMode.SUPPORTED_2D):
-            raise Exception("Unsupported TiTexture2D filter mode: " + self.filter_mode.name)
+            raise Exception("Unsupported Texture2D filter mode: " + self.filter_mode.name)
         if not (self.wrap_mode & WrapMode.SUPPORTED_2D):
-            raise Exception("Unsupported TiTexture2D wrap mode: " + self.wrap_mode.name)
+            raise Exception("Unsupported Texture2D wrap mode: " + self.wrap_mode.name)
 
     @ti.func
     def _get_lod_window(self, tex:ti.template(), lod:float) -> tm.ivec4:
@@ -665,7 +665,7 @@ class TiSampler2D:
         Sample texture at uv coordinates.
         
         :param tex: Texture to sample.
-        :type tex: TiTexture2D
+        :type tex: Texture2D
         :param uv: UV coordinates.
         :type uv: taichi.math.vec2
         :return: Sampled texel, subject to filter mode interpolation.
@@ -685,7 +685,7 @@ class TiSampler2D:
         Sample texture at uv coordinates at specified mip level.
 
         :param tex: Texture to sample.
-        :type tex: TiTexture2D
+        :type tex: Texture2D
         :param uv: UV coordinates.
         :type uv: taichi.math.vec2
         :param lod: Level of detail.
@@ -767,7 +767,7 @@ class TiSampler2D:
         """Fetch texel at indexed xy location.
         
         :param tex: Texture to sample.
-        :type tex: TiTexture2D
+        :type tex: Texture2D
         :param xy: xy index.
         :type xy: taichi.math.ivec2
         :return: Sampled texel.
@@ -784,7 +784,7 @@ class TiSampler2D:
 
 
 @ti.data_oriented
-class TiTexture2D:
+class Texture2D:
     """
     Taichi 2D read-write texture. Can be initialized with either texture shape or texture data.
 
@@ -851,8 +851,18 @@ class TiTexture2D:
         if torch.is_tensor(im): 
             self.__populate_prepared(im)
 
-    def __del__(self):
-        if self.fb_snode_tree and not self.fb_snode_tree.destroy is None: 
+    def destroy(self):
+        """
+        Destroy texture data and recover allocated memory. 
+
+        .. warning::
+
+            This is not done implicitly using :code:`__del__` as can cause Taichi to throws errors, 
+            as of version 1.7.1.
+
+        """
+        
+        if self.fb_snode_tree: 
             self.fb_snode_tree.destroy()
             
     def populate(self, im:Union[torch.Tensor, np.ndarray, float, tm.vec2, tm.vec3, tm.vec4]):

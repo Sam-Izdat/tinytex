@@ -9,4 +9,3 @@ from .diffraction import *
 from .warping import *
 from .mask import *
 from .util import *
-from .titexture import *
