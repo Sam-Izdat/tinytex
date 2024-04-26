@@ -22,8 +22,9 @@ class FilterMode(IntEnum):
     BICUBIC             = 1<<3
     B_SPLINE            = 1<<4
     MITCHELL_NETRAVALI  = 1<<5
+    CATMULL_ROM         = 1<<6
 
-    SUPPORTED_2D = NEAREST | BILINEAR | BICUBIC | B_SPLINE | MITCHELL_NETRAVALI
+    SUPPORTED_2D = NEAREST | BILINEAR | BICUBIC | B_SPLINE | MITCHELL_NETRAVALI | CATMULL_ROM
     SUPPORTED_3D = NEAREST | TRILINEAR
 
 class WrapMode(IntEnum):
@@ -58,7 +59,7 @@ def interpolant_b_spline(p:tm.vec4, x:float) -> float:
 def interpolant_mitchell_netravali(p:tm.vec4, x:float, b:float, c:float) -> float:
     third = (1./3.)
     sixth = (1./6.)
-    B, C = 1., 0.
+    B, C = b, c
     x_squared = x**2
     x_cubed = x**3
     out = ((-sixth * B - C) * p[0] + (-(3./2.) * B - C + 2.) * p[1] + ((3./2.) * B + C - 2.) * p[2] + (sixth * B + C) * p[3]) * x_cubed \
@@ -2289,6 +2290,15 @@ class Sampler2D:
                     return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
                     return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+            elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
         elif ti.static(tex.channels == 2):
             if ti.static(self.filter_mode == FilterMode.NEAREST):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
@@ -2335,6 +2345,15 @@ class Sampler2D:
                     return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
                     return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+            elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
         elif ti.static(tex.channels == 3):
             if ti.static(self.filter_mode == FilterMode.NEAREST):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
@@ -2381,6 +2400,15 @@ class Sampler2D:
                     return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
                     return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+            elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
         elif ti.static(tex.channels == 4):
             if ti.static(self.filter_mode == FilterMode.NEAREST):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
@@ -2427,6 +2455,15 @@ class Sampler2D:
                     return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
                     return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+            elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
 
     @ti.func
     def sample(self, tex:ti.template(), uv:tm.vec2):
