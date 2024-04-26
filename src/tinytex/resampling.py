@@ -14,7 +14,7 @@ class Resampling:
     @classmethod
     def tile(cls, im:torch.Tensor, shape:tuple) -> torch.Tensor:
         """
-        Tile image tensor to target shape.
+        Tile/repeat image tensor to match target shape.
 
         :param im: Image tensor sized [C, H, W] or [N, C, H, W].
         :param shape: Target shape as (height, width) tuple.
@@ -37,7 +37,7 @@ class Resampling:
     @classmethod
     def tile_n(cls, im:torch.Tensor, repeat_h:int, repeat_w:int):
         """
-        Tile image tensor by number of repetitions.
+        Tile/repeat image tensor by number of repetitions.
 
         :param im: Image tensor sized [C, H, W] or [N, C, H, W]
         :param repeat_h: Number of times to repeat image vertically.
@@ -104,7 +104,7 @@ class Resampling:
     @classmethod
     def resize(cls, im:torch.Tensor, shape:tuple, mode:str='bilinear', iterative_downsample=True):    
         """
-        Resize image tensor longest to target shape.
+        Resize image tensor to target shape.
 
         :param im: Image tensor sized [C, H, W] or [N, C, H, W].
         :param shape: Target shape as (height, width) tuple.
@@ -125,7 +125,38 @@ class Resampling:
             while im.size(2) >= shape[0] * 2:
                 im = F.avg_pool2d(im, kernel_size=(2, 1), stride=(2, 1))
 
-        res = F.interpolate(im, size=shape, mode=mode, align_corners=False)
+        res = F.interpolate(im, size=shape, mode=mode, align_corners=True)
+        return res.squeeze(0) if nobatch else res
+
+    @classmethod
+    def resize_se(cls, im:torch.Tensor, size:int, mode:str='bilinear', iterative_downsample=True) -> torch.Tensor:
+        """
+        Resize image tensor by shortest edge, constraining proportions.
+
+        :param im: Image tensor sized [C, H, W] or [N, C, H, W]
+        :param size: Target size for shortest edge
+        :param mode: Resampleing algorithm ('nearest' | 'linear' | 'bilinear' | 'bicubic')
+        :param iterative_downsample: Iteratively average pixels if image dimension must breduced 2x or more.
+        :return: Resampled image tensor sized [C, H, W] or [N, C, H, W]
+        """
+        ndim = len(im.size())
+        assert ndim == 3 or ndim == 4, cls.err_size
+        nobatch = ndim == 3
+        if nobatch: im = im.unsqueeze(0)
+        H, W = im.shape[2:]
+        if min(H, W) == size: return im.squeeze(0) if nobatch else im
+        scale = size / min(H, W)
+        new_h = int(np.ceil(H * scale))
+        new_w = int(np.ceil(W * scale))
+
+        if iterative_downsample:
+            while im.size(3) >= new_w * 2:
+                im = F.avg_pool2d(im, kernel_size=(1, 2), stride=(1, 2))
+
+            while im.size(2) >= new_h * 2:
+                im = F.avg_pool2d(im, kernel_size=(2, 1), stride=(2, 1))
+        
+        res = F.interpolate(im, size=(new_h, new_w), mode=mode, align_corners=True)
         return res.squeeze(0) if nobatch else res
 
     @classmethod
@@ -156,12 +187,12 @@ class Resampling:
             while im.size(2) >= new_h * 2:
                 im = F.avg_pool2d(im, kernel_size=(2, 1), stride=(2, 1))
         
-        res = F.interpolate(im, size=(new_h, new_w), mode=mode, align_corners=False)
+        res = F.interpolate(im, size=(new_h, new_w), mode=mode, align_corners=True)
         return res.squeeze(0) if nobatch else res
 
     def resize_le_to_next_pot(im:torch.Tensor, mode:str='bilinear'):
         """
-        Resize image tensor by longest edge up to next highest power-of-two, constraining proportions.
+        Resize image tensor by longest edge up to next higher power-of-two, constraining proportions.
 
         :param torch.tensor im: Image tensor sized [C, H, W] or [N, C, H, W].
         :return: Resampled image tensor sized [C, H, W] or [N, C, H, W].

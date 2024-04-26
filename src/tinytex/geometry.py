@@ -53,7 +53,7 @@ class Geometry:
         y = normal_map[:, 1:2, :, :]
         z = normal_map[:, 2:3, :, :]
 
-        # Calculate angles and normalize 0-1 range
+        # Calculate angles and normalize [0, 1] range
         atan2_xz = torch.atan2(x, z) / (torch.pi * 0.5)
         acos_y = torch.acos(y) / torch.pi
         angles = torch.cat([atan2_xz, acos_y], dim=1)
@@ -266,9 +266,9 @@ class Geometry:
         :param height_map: Height map tensor sized [N, C=1, H, W] or [C=1, H, W].
         :param blur_kernel_size: Size of blur kernel.
         :param blur_iter: Blur iterations.
-        :return: curvature map tensor sized [N, C=1, H, W] in 0-1 range,
-            cavity map tensor [N, C=1, H, W] in 0-1 range,
-            peak map tensor [N, C=1, H, W] in 0-1 range
+        :return: curvature map tensor sized [N, C=1, H, W] in [0, 1] range,
+            cavity map tensor [N, C=1, H, W] in [0, 1] range,
+            peak map tensor [N, C=1, H, W] in [0, 1] range
         """
         # see: http://rodolphe-vaillant.fr/entry/33/curvature-of-a-triangle-mesh-definition-and-computation
         ndim = len(height_map.size())
@@ -490,7 +490,7 @@ class Geometry:
         """
         Convert image tensor of height values to flat tensor of position vectors.
 
-        :param torch.tensor height_map: height map tensor sized [C=1, H, W] in 0-1 range
+        :param torch.tensor height_map: height map tensor sized [C=1, H, W] in [0, 1] range
         :param device: device for tensors (i.e. cpu or cuda)
         :return: position tensor sized [H*W, C=3] 
         :rtype: torch.tensor

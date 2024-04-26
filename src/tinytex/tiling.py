@@ -148,7 +148,10 @@ class Tiling:
         wrap:bool=True, 
         vector_data:bool=False) -> torch.Tensor:
         """
-        Blend tiles to remove seams.
+        Blend tiles to remove seams. Uses Poisson solver to match image gradients.
+
+        .. note:: This is a computationally expensive task. For much faster performance, 
+            install AMGCL or PyAMG and they will be used over SciPy's spsolve automatically.
 
         :param tiles: Tiles as pytorch image tensor sized [N, C, H, W] or [C, H, W].
         :param rows: Total number of rows in tile grid.
