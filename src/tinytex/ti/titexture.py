@@ -634,9 +634,139 @@ def sample_hermite_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
     return tm.vec4(sample_hermite_repeat_y_vec(tex, uv, repeat_w, repeat_h, window, 4))
 
 
+@ti.func
+def dxdy_2D_grid_cubic(
+    xy_grid:tm.vec2, 
+    grid_height:int, 
+    grid_width:int, 
+    probe_height:int, 
+    probe_width:int,
+    probe_pad:int,
+    kernel:tm.ivec2,
+    kernel_height:float,
+    kernel_width:float) -> (tm.mat4, tm.vec2, tm.ivec4, tm.ivec4): #(ivec16, vec16, tm.vec2):
+    """
+    Returns cubic indices, gradients and positions on 2D grid, inside a kernel, given denormalized xy position.
+    Intended for probe grid intepolation/approximation. Grid is clamped at the edges.
+    """
+    canvas_shape = tm.vec2(float(self.canvas_shape[1]), float(self.canvas_shape[0]))
+    probe_halfheight = probe_height * 0.5
+    probe_halfwidth = probe_width * 0.5
+    hps = 1. / (canvas_shape * 2.)
+    padded_kernel = tm.vec2(kernel_width + probe_pad * probe_width * 2, kernel_height + probe_pad * probe_height * 2)
+    xy = tm.vec2(xy_grid.x + probe_pad * probe_width, xy_grid.y + probe_pad * probe_height)
+    uv_grid = tm.clamp(xy / padded_kernel, 0., 1.)
+    pos = tm.vec2(grid_width * uv_grid.x - 0.5, grid_height * uv_grid.y - 0.5)
 
+    x1, y1 = int(pos.x), int(pos.y)
+    x0, y0 = tm.clamp(x1-1, 0, grid_width-1), tm.clamp(y1-1, 0, grid_height-1)
+    x2, y2 = tm.clamp(x1+1, 0, grid_width-1), tm.clamp(y1+1, 0, grid_height-1)
+    x3, y3 = tm.clamp(x1+2, 0, grid_width-1), tm.clamp(y1+2, 0, grid_height-1)
+    dx, dy = pos.x - x1, pos.y - y1
 
+    q00 = int((y0 * grid_width) + x0)
+    q01 = int((y1 * grid_width) + x0)
+    q02 = int((y2 * grid_width) + x0)
+    q03 = int((y3 * grid_width) + x0)
 
+    q10 = int((y0 * grid_width) + x1)
+    q11 = int((y1 * grid_width) + x1)
+    q12 = int((y2 * grid_width) + x1)
+    q13 = int((y3 * grid_width) + x1)
+
+    q20 = int((y0 * grid_width) + x2)
+    q21 = int((y1 * grid_width) + x2)
+    q22 = int((y2 * grid_width) + x2)
+    q23 = int((y3 * grid_width) + x2)
+
+    q30 = int((y0 * grid_width) + x3)
+    q31 = int((y1 * grid_width) + x3)
+    q32 = int((y2 * grid_width) + x3)
+    q33 = int((y3 * grid_width) + x3)
+ 
+    indices = tm.mat4([
+        [q00, q01, q02, q03],
+        [q10, q11, q12, q13],
+        [q20, q21, q22, q23],
+        [q30, q31, q32, q33]
+        ])
+
+    pos_x = tm.ivec4(x0, x1, x2, x3)
+    pos_y = tm.ivec4(y0, y1, y2, y3)
+
+    # indices = ivec16([q00, q01, q02, q03, q10, q11, q12, q13, q20, q21, q22, q23, q30, q31, q32, q33])
+    # weights = vec16(1.)
+    # if use_depth_weights:
+    #     co = tm.vec2(kernel.x * kernel_width - probe_width * probe_pad, kernel.y * kernel_height - probe_height * probe_pad)
+    #     uv00 = tm.vec2(co.x + x0 * probe_width + probe_halfwidth, co.y + y0 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+    #     uv01 = tm.vec2(co.x + x0 * probe_width + probe_halfwidth, co.y + y1 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+    #     uv02 = tm.vec2(co.x + x0 * probe_width + probe_halfwidth, co.y + y2 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+    #     uv03 = tm.vec2(co.x + x0 * probe_width + probe_halfwidth, co.y + y3 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+
+    #     uv10 = tm.vec2(co.x + x1 * probe_width + probe_halfwidth, co.y + y0 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+    #     uv11 = tm.vec2(co.x + x1 * probe_width + probe_halfwidth, co.y + y1 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+    #     uv12 = tm.vec2(co.x + x1 * probe_width + probe_halfwidth, co.y + y2 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+    #     uv13 = tm.vec2(co.x + x1 * probe_width + probe_halfwidth, co.y + y3 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+
+    #     uv20 = tm.vec2(co.x + x2 * probe_width + probe_halfwidth, co.y + y0 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+    #     uv21 = tm.vec2(co.x + x2 * probe_width + probe_halfwidth, co.y + y1 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+    #     uv22 = tm.vec2(co.x + x2 * probe_width + probe_halfwidth, co.y + y2 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+    #     uv23 = tm.vec2(co.x + x2 * probe_width + probe_halfwidth, co.y + y3 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+
+    #     uv30 = tm.vec2(co.x + x3 * probe_width + probe_halfwidth, co.y + y0 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+    #     uv31 = tm.vec2(co.x + x3 * probe_width + probe_halfwidth, co.y + y1 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+    #     uv32 = tm.vec2(co.x + x3 * probe_width + probe_halfwidth, co.y + y2 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+    #     uv33 = tm.vec2(co.x + x3 * probe_width + probe_halfwidth, co.y + y3 * probe_height + probe_halfheight) / canvas_shape.xy + hps
+
+    #     d00 = self.sampler.sample_lod(self.positions, uv00, float(cascade)).z
+    #     d01 = self.sampler.sample_lod(self.positions, uv01, float(cascade)).z
+    #     d02 = self.sampler.sample_lod(self.positions, uv02, float(cascade)).z
+    #     d03 = self.sampler.sample_lod(self.positions, uv03, float(cascade)).z
+
+    #     d10 = self.sampler.sample_lod(self.positions, uv10, float(cascade)).z
+    #     d11 = self.sampler.sample_lod(self.positions, uv11, float(cascade)).z
+    #     d12 = self.sampler.sample_lod(self.positions, uv12, float(cascade)).z
+    #     d13 = self.sampler.sample_lod(self.positions, uv13, float(cascade)).z
+
+    #     d20 = self.sampler.sample_lod(self.positions, uv20, float(cascade)).z
+    #     d21 = self.sampler.sample_lod(self.positions, uv21, float(cascade)).z
+    #     d22 = self.sampler.sample_lod(self.positions, uv22, float(cascade)).z
+    #     d23 = self.sampler.sample_lod(self.positions, uv23, float(cascade)).z
+
+    #     d30 = self.sampler.sample_lod(self.positions, uv30, float(cascade)).z
+    #     d31 = self.sampler.sample_lod(self.positions, uv31, float(cascade)).z
+    #     d32 = self.sampler.sample_lod(self.positions, uv32, float(cascade)).z
+    #     d33 = self.sampler.sample_lod(self.positions, uv33, float(cascade)).z
+
+    #     uv_pos = tm.vec3((co + xy_grid) / canvas_shape, probe_elevation)
+    #     weights = vec16([d00, d01, d02, d03, d10, d11, d12, d13, d20, d21, d22, d23, d30, d31, d32, d33])
+
+    #     depth_scale = 0.01
+    #     depth_bias = self.depth_bias
+
+    #     weights[0]  = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv00, d00)) * depth_scale) * depth_bias)
+    #     weights[1]  = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv01, d01)) * depth_scale) * depth_bias)
+    #     weights[2]  = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv02, d02)) * depth_scale) * depth_bias)
+    #     weights[3]  = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv03, d03)) * depth_scale) * depth_bias)
+
+    #     weights[4]  = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv10, d10)) * depth_scale) * depth_bias)
+    #     weights[5]  = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv11, d11)) * depth_scale) * depth_bias)
+    #     weights[6]  = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv12, d12)) * depth_scale) * depth_bias)
+    #     weights[7]  = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv13, d13)) * depth_scale) * depth_bias)
+
+    #     weights[8]  = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv20, d20)) * depth_scale) * depth_bias)
+    #     weights[9]  = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv21, d21)) * depth_scale) * depth_bias)
+    #     weights[10] = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv22, d22)) * depth_scale) * depth_bias)
+    #     weights[11] = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv23, d23)) * depth_scale) * depth_bias)
+
+    #     weights[12] = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv30, d30)) * depth_scale) * depth_bias)
+    #     weights[13] = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv31, d31)) * depth_scale) * depth_bias)
+    #     weights[14] = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv32, d32)) * depth_scale) * depth_bias)
+    #     weights[15] = tm.exp(-(tm.distance(uv_pos, tm.vec3(uv33, d33)) * depth_scale) * depth_bias)
+
+    # # weights /= weights.sum()
+
+    return indices, tm.vec2(dx, dy), pos_x, pos_y #, weights, tm.vec2(tx, ty)
 
 @ti.func
 def sample_b_spline_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
@@ -735,7 +865,7 @@ def sample_b_spline_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
         [q10, q11, q12, q13],
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
-        ])        
+        ])
     out = tm.max(spline_b_spline(p, dx, dy), 0.)
 
     return out
@@ -1851,6 +1981,158 @@ def sample_nn_rgba_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h
 def sample_nn_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
     return tm.vec4(sample_nn_repeat_y(tex, uv, repeat_w, repeat_h, window))
 
+@ti.func
+def dxdy_2D_grid_bilinear(
+    xy_grid:tm.vec2, 
+    grid_height:int, 
+    grid_width:int, 
+    probe_height:int, 
+    probe_width:int,
+    probe_pad:int,
+    kernel:tm.ivec2,
+    kernel_height:float,
+    kernel_width:float) -> (tm.ivec4, tm.vec2, tm.ivec2, tm.ivec2):
+    """
+    Returns bilinear indices, gradients and positions on 2D grid, inside a kernel, given denormalized xy position.
+    Intended for probe grid interpolation. Grid is clamped at the edges.
+    """
+    canvas_shape = tm.vec2(float(self.canvas_shape[1]), float(self.canvas_shape[0]))
+    probe_halfheight = probe_height * 0.5
+    probe_halfwidth = probe_width * 0.5
+    padded_kernel = tm.vec2(kernel_width + probe_pad * probe_width * 2, kernel_height + probe_pad * probe_height * 2)
+    hp_grid = tm.vec2(0.5 / grid_width, 0.5 / grid_height)
+    # hp_can = 0.5 / canvas_shape
+    xy = tm.vec2(xy_grid.x + probe_pad * probe_width, xy_grid.y + probe_pad * probe_height)
+    uv_grid = xy / padded_kernel
+    uv_grid.x = tm.clamp(uv_grid.x, 0. + hp_grid.x, 1. - hp_grid.x)
+    uv_grid.y = tm.clamp(uv_grid.y, 0. + hp_grid.y, 1. - hp_grid.y)
+    pos = tm.vec2(uv_grid.x * grid_width - 0.5, uv_grid.y * grid_height - 0.5)
+    pos.x = tm.clamp(pos.x, 0., grid_width - 1.)
+    pos.y = tm.clamp(pos.y, 0., grid_height - 1.)
+    x0, y0 = int(pos.x), int(pos.y)
+    dx = pos.x - float(x0)
+    dy = pos.y - float(y0)
+    x1 = tm.min(x0 + 1, int(grid_width - 1))
+    y1 = tm.min(y0 + 1, int(grid_height - 1))
+    q00 = int((y0 * grid_width) + x0)
+    q01 = int((y1 * grid_width) + x0)
+    q10 = int((y0 * grid_width) + x1)
+    q11 = int((y1 * grid_width) + x1)
+    indices = tm.ivec4(q00, q01, q10, q11)
+
+    pos_x = tm.ivec2(x0, x1)
+    pos_y = tm.ivec2(y0, y1)
+
+    # co = tm.vec2(kernel.x * kernel_width - probe_width * probe_pad, kernel.y * kernel_height - probe_height * probe_pad)
+    # uv00 = tm.vec2(co.x + x0 * probe_width + probe_halfwidth, co.y + y0 * probe_height + probe_halfheight) / canvas_shape.xy
+    # uv01 = tm.vec2(co.x + x0 * probe_width + probe_halfwidth, co.y + y1 * probe_height + probe_halfheight) / canvas_shape.xy
+    # uv10 = tm.vec2(co.x + x1 * probe_width + probe_halfwidth, co.y + y0 * probe_height + probe_halfheight) / canvas_shape.xy
+    # uv11 = tm.vec2(co.x + x1 * probe_width + probe_halfwidth, co.y + y1 * probe_height + probe_halfheight) / canvas_shape.xy
+
+    # d00 = sampler.sample_lod(tex_pos, uv00, float(cascade)).z
+    # d01 = sampler.sample_lod(tex_pos, uv01, float(cascade)).z
+    # d10 = sampler.sample_lod(tex_pos, uv10, float(cascade)).z
+    # d11 = sampler.sample_lod(tex_pos, uv11, float(cascade)).z
+
+    # uv_pos = tm.vec3((co + xy_grid) / canvas_shape, probe_elevation)
+    # weights = tm.vec4(1.)
+    # weights[0] = (1. - dx) * (1. - dy)
+    # weights[1] = (1. - dx) * dy
+    # weights[2] = dx * (1. - dy)
+    # weights[3] = dx * dy
+    # if use_depth_weights:
+    #     weights[0] *= tm.exp(-(tm.distance(uv_pos, tm.vec3(uv00 * canvas_shape, d00)) * 0.01) * depth_bias)
+    #     weights[1] *= tm.exp(-(tm.distance(uv_pos, tm.vec3(uv01 * canvas_shape, d01)) * 0.01) * depth_bias)
+    #     weights[2] *= tm.exp(-(tm.distance(uv_pos, tm.vec3(uv10 * canvas_shape, d10)) * 0.01) * depth_bias)
+    #     weights[3] *= tm.exp(-(tm.distance(uv_pos, tm.vec3(uv11 * canvas_shape, d11)) * 0.01) * depth_bias)
+    #     weights /= tm.dot(tm.vec4(1.), weights)
+
+    return indices, tm.vec2(dx, dy), pos_x, pos_y
+
+@ti.func
+def dxdy_bilinear_clamp(
+    uv:tm.vec2,
+    width:int,
+    height:int,
+    repeat_w:int,
+    repeat_h:int,
+    ) -> tuple:
+    hp = tm.vec2(0.5 / width, 0.5 / height)
+    uvb = tm.vec2(0.)
+    uvb.x = (tm.clamp(uv.x + hp.x, 0., 1. - hp.x) * repeat_h)
+    uvb.y = (tm.clamp(uv.y + hp.y, 0., 1. - hp.y) * repeat_w)
+    pos = tm.vec2(uvb.x * width - 0.5, uvb.y * height - 0.5)
+    pos.x = tm.clamp(pos.x, 0., width - 1.)
+    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    x0, y0 = int(pos.x), int(pos.y)
+    dx = pos.x - float(x0)
+    dy = pos.y - float(y0)
+    x1 = tm.min(x0+1, int(width - 1))
+    y1 = tm.min(y0+1, int(height - 1))
+    return tm.ivec4(x0, y0, x1, y1), tm.vec2(dx, dy)
+
+@ti.func
+def dxdy_bilinear_repeat(
+    uv:tm.vec2,
+    width:int,
+    height:int,
+    repeat_w:int,
+    repeat_h:int,
+    ) -> tuple:
+    uvb = (uv * tm.vec2(repeat_h, repeat_w)) % 1.
+    pos = tm.vec2(uvb.x * width - 0.5, uvb.y * height - 0.5)
+    pos.x = pos.x % width
+    pos.y = pos.y % height
+    x0, y0 = int(pos.x), int(pos.y)
+    dx = pos.x - float(x0)
+    dy = pos.y - float(y0)
+    x1 = (x0+1) % width
+    y1 = (y0+1) % height
+    return tm.ivec4(x0, y0, x1, y1), tm.vec2(dx, dy)
+
+@ti.func
+def dxdy_bilinear_repeat_x(
+    uv:tm.vec2,
+    width:int,
+    height:int,
+    repeat_w:int,
+    repeat_h:int,
+    ) -> tuple:
+    hpy = 0.5 / height
+    uvb = tm.vec2(0.)
+    uvb.x = (uv.x * repeat_h) % 1.
+    uvb.y = (tm.clamp(uv.y, 0. + hpy, 1. - hpy) * repeat_w) % 1.
+    pos = tm.vec2(uvb.x * width - 0.5, uvb.y * height - 0.5)
+    pos.x = tm.clamp(pos.x, 0., width - 1.)
+    pos.y = pos.y % height
+    x0, y0 = int(pos.x), int(pos.y)
+    dx = pos.x - float(x0)
+    dy = pos.y - float(y0)
+    x1 = tm.min(x0+1, int(width - 1))
+    y1 = (y0+1) % height
+    return tm.ivec4(x0, y0, x1, y1), tm.vec2(dx, dy)
+
+@ti.func
+def dxdy_bilinear_repeat_y(
+    uv:tm.vec2,
+    width:int,
+    height:int,
+    repeat_w:int,
+    repeat_h:int,
+    ) -> tuple:
+    hpx = 0.5 / width
+    uvb = tm.vec2(0.)
+    uvb.x = (tm.clamp(uv.x, 0. + hpx, 1. - hpx) * repeat_h) % 1.
+    uvb.y = (uv.y * repeat_w) % 1.
+    pos = tm.vec2(uvb.x * width - 0.5, uvb.y * height - 0.5)
+    pos.x = pos.x % width
+    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    x0, y0 = int(pos.x), int(pos.y)
+    dx = pos.x - float(x0)
+    dy = pos.y - float(y0)
+    x1 = (x0+1) % width
+    y1 = tm.min(y0+1, int(height - 1))
+    return tm.ivec4(x0, y0, x1, y1), tm.vec2(dx, dy)
 
 @ti.func
 def sample_bilinear_repeat(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
@@ -2041,92 +2323,6 @@ def sample_bilinear_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, r
 
 
 
-
-@ti.func
-def _sample_bilinear_clamp_partial(
-    uv:tm.vec2,
-    width:int,
-    height:int,
-    repeat_w:int,
-    repeat_h:int,
-    ) -> tuple:
-    hp = tm.vec2(0.5 / width, 0.5 / height)
-    uvb = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x + hp.x, 0., 1. - hp.x) * repeat_h)
-    uvb.y = (tm.clamp(uv.y + hp.y, 0., 1. - hp.y) * repeat_w)
-    pos = tm.vec2(uvb.x * width - 0.5, uvb.y * height - 0.5)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
-    x0, y0 = int(pos.x), int(pos.y)
-    dx = pos.x - float(x0)
-    dy = pos.y - float(y0)
-    x1 = tm.min(x0+1, int(width - 1))
-    y1 = tm.min(y0+1, int(height - 1))
-    return tm.ivec4(x0, y0, x1, y1), tm.vec2(dx, dy)
-
-@ti.func
-def _sample_bilinear_repeat_partial(
-    uv:tm.vec2,
-    width:int,
-    height:int,
-    repeat_w:int,
-    repeat_h:int,
-    ) -> tuple:
-    uvb = (uv * tm.vec2(repeat_h, repeat_w)) % 1.
-    pos = tm.vec2(uvb.x * width - 0.5, uvb.y * height - 0.5)
-    pos.x = pos.x % width
-    pos.y = pos.y % height
-    x0, y0 = int(pos.x), int(pos.y)
-    dx = pos.x - float(x0)
-    dy = pos.y - float(y0)
-    x1 = (x0+1) % width
-    y1 = (y0+1) % height
-    return tm.ivec4(x0, y0, x1, y1), tm.vec2(dx, dy)
-
-@ti.func
-def _sample_bilinear_repeat_x_partial(
-    uv:tm.vec2,
-    width:int,
-    height:int,
-    repeat_w:int,
-    repeat_h:int,
-    ) -> tuple:
-    hpy = 0.5 / height
-    uvb = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, 0. + hpy, 1. - hpy) * repeat_w) % 1.
-    pos = tm.vec2(uvb.x * width - 0.5, uvb.y * height - 0.5)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
-    pos.y = pos.y % height
-    x0, y0 = int(pos.x), int(pos.y)
-    dx = pos.x - float(x0)
-    dy = pos.y - float(y0)
-    x1 = tm.min(x0+1, int(width - 1))
-    y1 = (y0+1) % height
-    return tm.ivec4(x0, y0, x1, y1), tm.vec2(dx, dy)
-
-@ti.func
-def _sample_bilinear_repeat_y_partial(
-    uv:tm.vec2,
-    width:int,
-    height:int,
-    repeat_w:int,
-    repeat_h:int,
-    ) -> tuple:
-    hpx = 0.5 / width
-    uvb = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, 0. + hpx, 1. - hpx) * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
-    pos = tm.vec2(uvb.x * width - 0.5, uvb.y * height - 0.5)
-    pos.x = pos.x % width
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
-    x0, y0 = int(pos.x), int(pos.y)
-    dx = pos.x - float(x0)
-    dy = pos.y - float(y0)
-    x1 = (x0+1) % width
-    y1 = tm.min(y0+1, int(height - 1))
-    return tm.ivec4(x0, y0, x1, y1), tm.vec2(dx, dy)
-
 @ti.func
 def sample_indexed_bilinear(
     tex:ti.template(), 
@@ -2142,13 +2338,13 @@ def sample_indexed_bilinear(
     xy = tm.ivec4(0)
     dxdy = tm.vec2(0.)
     if wrap_mode == WrapMode.CLAMP:
-        xy, dxdy = _sample_bilinear_clamp_partial(uv, width, height, repeat_w, repeat_h)
+        xy, dxdy = dxdy_bilinear_clamp(uv, width, height, repeat_w, repeat_h)
     elif wrap_mode == WrapMode.REPEAT:
-        xy, dxdy = _sample_bilinear_repeat_partial(uv, width, height, repeat_w, repeat_h)
+        xy, dxdy = dxdy_bilinear_repeat(uv, width, height, repeat_w, repeat_h)
     elif wrap_mode == WrapMode.REPEAT_X:
-        xy, dxdy = _sample_bilinear_repeat_x_partial(uv, width, height, repeat_w, repeat_h)
+        xy, dxdy = dxdy_bilinear_repeat_x(uv, width, height, repeat_w, repeat_h)
     elif wrap_mode == WrapMode.REPEAT_Y:
-        xy, dxdy = _sample_bilinear_repeat_y_partial(uv, width, height, repeat_w, repeat_h)
+        xy, dxdy = dxdy_bilinear_repeat_y(uv, width, height, repeat_w, repeat_h)
 
     xofs, yofs = int(window.x), int(window.y)
     q00 = tex[idx, yofs + xy.y, xofs + xy.x] 
@@ -2180,8 +2376,8 @@ def sample_indexed_bilinear(
 # @ti.data_oriented
 # class SamplerGrid2D:
 #     """
-#     Taichi 2D grid-of-textures sampler. 2D interpolation on 2D textures, additionally 
-#     themselves spatially interpolated on a 2D texture grid. Useful for probe sampling.
+#     Taichi 2D grid-of-textures sampler. 2D interpolation/approximation on 2D textures, additionally 
+#     themselves spatially interpolated/approximated on a 2D texture grid. Useful for probe sampling.
 
 #     :param grid_rows: Number of rows in the grid.
 #     :param grid_cols: Number of columns in the grid.
@@ -2198,8 +2394,8 @@ def sample_indexed_bilinear(
 # @ti.data_oriented
 # class SamplerGrid2DWeighted:
 #     """
-#     Taichi 2D grid-of-textures sampler. 2D interpolation on 2D textures, additionally 
-#     themselves spatially interpolated on a 2D texture grid. Grid samples are weighted.
+#     Taichi 2D grid-of-textures sampler. 2D interpolation/approximation on 2D textures, additionally 
+#     themselves spatially interpolated/approximated on a 2D texture grid. Grid samples are weighted.
 #     Useful for probe sampling.
 
 #     :param grid_rows: Number of rows in the grid.
@@ -2311,23 +2507,25 @@ class Sampler2D:
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
                     return sample_hermite_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
             elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
+                third = 0.3333333
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
             elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
+                b, c = 0., 0.5
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
         elif ti.static(tex.channels == 2):
             if ti.static(self.filter_mode == FilterMode.NEAREST):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
@@ -2366,23 +2564,25 @@ class Sampler2D:
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
                     return sample_hermite_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
             elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
+                third = 0.3333333
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
             elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
+                b, c = 0., 0.5
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
         elif ti.static(tex.channels == 3):
             if ti.static(self.filter_mode == FilterMode.NEAREST):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
@@ -2421,23 +2621,25 @@ class Sampler2D:
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
                     return sample_hermite_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
             elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
+                third = 0.3333333
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
             elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
+                b, c = 0., 0.5
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
         elif ti.static(tex.channels == 4):
             if ti.static(self.filter_mode == FilterMode.NEAREST):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
@@ -2476,23 +2678,25 @@ class Sampler2D:
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
                     return sample_hermite_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
             elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
+                third = 0.3333333
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0.333333, 0.333333)
+                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
             elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
+                b, c = 0., 0.5
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, 0., 0.5)
+                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
 
     @ti.func
     def sample(self, tex:ti.template(), uv:tm.vec2):
@@ -2503,7 +2707,7 @@ class Sampler2D:
         :type tex: Texture2D
         :param uv: UV coordinates.
         :type uv: taichi.math.vec2
-        :return: Sampled texel, subject to filter mode interpolation.
+        :return: Filtered sampled texel.
         :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
         """
         window = tm.ivec4(0, 0, tex.width, tex.height)
@@ -2525,7 +2729,7 @@ class Sampler2D:
         :type uv: taichi.math.vec2
         :param lod: Level of detail.
         :type lod: float
-        :return: Sampled texel, subject to filter mode interpolation.
+        :return: Filtered sampled texel.
         :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
         """
         if ti.static(tex.channels == 1):
