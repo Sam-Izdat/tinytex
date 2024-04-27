@@ -460,7 +460,7 @@ def sample_hermite_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
     x2 = tm.min(x1+1, int(width - 1))
     y2 = (y1+1) % height
     x3 = tm.min(x1+2, int(width - 1))
-    y3 = (y1+1) % height
+    y3 = (y1+2) % height
 
     xofs, yofs = int(window.x), int(window.y)
     dx = pos.x - float(x1)
@@ -517,7 +517,7 @@ def sample_hermite_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, r
     x2 = tm.min(x1+1, int(width - 1))
     y2 = (y1+1) % height
     x3 = tm.min(x1+2, int(width - 1))
-    y3 = (y1+1) % height
+    y3 = (y1+2) % height
 
     xofs, yofs = int(window.x), int(window.y)
     dx = pos.x - float(x1)
@@ -1120,7 +1120,7 @@ def sample_b_spline_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
     x2 = tm.min(x1+1, int(width - 1))
     y2 = (y1+1) % height
     x3 = tm.min(x1+2, int(width - 1))
-    y3 = (y1+1) % height
+    y3 = (y1+2) % height
 
     xofs, yofs = int(window.x), int(window.y)
     dx = pos.x - float(x1)
@@ -1177,7 +1177,7 @@ def sample_b_spline_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, 
     x2 = tm.min(x1+1, int(width - 1))
     y2 = (y1+1) % height
     x3 = tm.min(x1+2, int(width - 1))
-    y3 = (y1+1) % height
+    y3 = (y1+2) % height
 
     xofs, yofs = int(window.x), int(window.y)
     dx = pos.x - float(x1)
@@ -1660,7 +1660,7 @@ def sample_mitchell_netravali_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat
     x2 = tm.min(x1+1, int(width - 1))
     y2 = (y1+1) % height
     x3 = tm.min(x1+2, int(width - 1))
-    y3 = (y1+1) % height
+    y3 = (y1+2) % height
 
     xofs, yofs = int(window.x), int(window.y)
     dx = pos.x - float(x1)
@@ -1717,7 +1717,7 @@ def sample_mitchell_netravali_repeat_y_float(tex:ti.template(), uv:tm.vec2, repe
     x2 = tm.min(x1+1, int(width - 1))
     y2 = (y1+1) % height
     x3 = tm.min(x1+2, int(width - 1))
-    y3 = (y1+1) % height
+    y3 = (y1+2) % height
 
     xofs, yofs = int(window.x), int(window.y)
     dx = pos.x - float(x1)
