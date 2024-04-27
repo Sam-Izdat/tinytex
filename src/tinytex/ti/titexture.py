@@ -78,7 +78,7 @@ def compute_mitchell_netravali_spline(p:tm.vec4, x:float, b:float, c:float) -> f
     return out
 
 @ti.func
-def spline_cubic_hermite(p:tm.mat4, x:float, y:float) -> float:
+def cubic_hermite(p:tm.mat4, x:float, y:float) -> float:
     arr = tm.vec4(0.)
     arr[0] = compute_cubic_hermite_spline(tm.vec4(p[0,:]), y)
     arr[1] = compute_cubic_hermite_spline(tm.vec4(p[1,:]), y)
@@ -87,7 +87,7 @@ def spline_cubic_hermite(p:tm.mat4, x:float, y:float) -> float:
     return compute_cubic_hermite_spline(arr, x)
 
 @ti.func
-def spline_b_spline(p:tm.mat4, x:float, y:float) -> float:
+def cubic_b_spline(p:tm.mat4, x:float, y:float) -> float:
     arr = tm.vec4(0.)
     arr[0] = compute_b_spline(tm.vec4(p[0,:]), y)
     arr[1] = compute_b_spline(tm.vec4(p[1,:]), y)
@@ -96,7 +96,7 @@ def spline_b_spline(p:tm.mat4, x:float, y:float) -> float:
     return compute_b_spline(arr, x)
 
 @ti.func
-def spline_mitchell_netravali(p:tm.mat4, x:float, y:float, b:float, c:float) -> float:
+def cubic_mitchell_netravali(p:tm.mat4, x:float, y:float, b:float, c:float) -> float:
     arr = tm.vec4(0.)
     arr[0] = compute_mitchell_netravali_spline(tm.vec4(p[0,:]), y, b, c)
     arr[1] = compute_mitchell_netravali_spline(tm.vec4(p[1,:]), y, b, c)
@@ -163,7 +163,7 @@ def sample_hermite_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repea
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
-        out[ch] = tm.max(spline_cubic_hermite(p, dx, dy), 0.)
+        out[ch] = tm.max(cubic_hermite(p, dx, dy), 0.)
 
 @ti.func
 def sample_hermite_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
@@ -212,13 +212,14 @@ def sample_hermite_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
         ])        
-    out = tm.max(spline_cubic_hermite(p, dx, dy), 0.)
+    out = tm.max(cubic_hermite(p, dx, dy), 0.)
 
     return out
 
 @ti.func
 def sample_hermite_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (tm.clamp(uv.x, 0. + hp.x, 1. - hp.x) * repeat_h) % 1.
@@ -269,13 +270,14 @@ def sample_hermite_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
-        out[ch] = tm.max(spline_cubic_hermite(p, dx, dy), 0.)
+        out[ch] = tm.max(cubic_hermite(p, dx, dy), 0.)
 
     return out
 
 @ti.func
 def sample_hermite_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (tm.clamp(uv.x, 0. + hp.x, 1. - hp.x) * repeat_h) % 1.
@@ -323,13 +325,14 @@ def sample_hermite_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repe
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
         ])        
-    out = tm.max(spline_cubic_hermite(p, dx, dy), 0.)
+    out = tm.max(cubic_hermite(p, dx, dy), 0.)
 
     return out
 
 @ti.func
 def sample_hermite_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (uv.x * repeat_h) % 1.
@@ -343,7 +346,7 @@ def sample_hermite_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
     y0 = tm.min(y1-1, int(height - 1))
     x2 = (x1+1) % width
     y2 = tm.min(y1+1, int(height - 1))
-    x3 = (x1+3) % width
+    x3 = (x1+2) % width
     y3 = tm.min(y1+2, int(height - 1))
 
     xofs, yofs = int(window.x), int(window.y)
@@ -380,13 +383,14 @@ def sample_hermite_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
-        out[ch] = tm.max(spline_cubic_hermite(p, dx, dy), 0.)
+        out[ch] = tm.max(cubic_hermite(p, dx, dy), 0.)
 
     return out
 
 @ti.func
 def sample_hermite_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (uv.x * repeat_h) % 1.
@@ -400,7 +404,7 @@ def sample_hermite_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, r
     y0 = tm.min(y1-1, int(height - 1))
     x2 = (x1+1) % width
     y2 = tm.min(y1+1, int(height - 1))
-    x3 = (x1+3) % width
+    x3 = (x1+2) % width
     y3 = tm.min(y1+2, int(height - 1))
 
     xofs, yofs = int(window.x), int(window.y)
@@ -434,13 +438,14 @@ def sample_hermite_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, r
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
         ])        
-    out = tm.max(spline_cubic_hermite(p, dx, dy), 0.)
+    out = tm.max(cubic_hermite(p, dx, dy), 0.)
 
     return out
 
 @ti.func
 def sample_hermite_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (tm.clamp(uv.x, 0. + hp.x, 1. - hp.x) * repeat_h) % 1.
@@ -490,13 +495,14 @@ def sample_hermite_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
-        out[ch] = tm.max(spline_cubic_hermite(p, dx, dy), 0.)
+        out[ch] = tm.max(cubic_hermite(p, dx, dy), 0.)
 
     return out
 
 @ti.func
 def sample_hermite_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (tm.clamp(uv.x, 0. + hp.x, 1. - hp.x) * repeat_h) % 1.
@@ -544,7 +550,7 @@ def sample_hermite_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, r
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
         ])        
-    out = tm.max(spline_cubic_hermite(p, dx, dy), 0.)
+    out = tm.max(cubic_hermite(p, dx, dy), 0.)
 
     return out
 
@@ -817,7 +823,7 @@ def sample_b_spline_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repe
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
-        out[ch] = tm.max(spline_b_spline(p, dx, dy), 0.)
+        out[ch] = tm.max(cubic_b_spline(p, dx, dy), 0.)
 
 @ti.func
 def sample_b_spline_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
@@ -866,13 +872,14 @@ def sample_b_spline_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
         ])
-    out = tm.max(spline_b_spline(p, dx, dy), 0.)
+    out = tm.max(cubic_b_spline(p, dx, dy), 0.)
 
     return out
 
 @ti.func
 def sample_b_spline_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (tm.clamp(uv.x, 0. + hp.x, 1. - hp.x) * repeat_h) % 1.
@@ -923,13 +930,14 @@ def sample_b_spline_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repea
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
-        out[ch] = tm.max(spline_b_spline(p, dx, dy), 0.)
+        out[ch] = tm.max(cubic_b_spline(p, dx, dy), 0.)
 
     return out
 
 @ti.func
 def sample_b_spline_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (tm.clamp(uv.x, 0. + hp.x, 1. - hp.x) * repeat_h) % 1.
@@ -977,13 +985,14 @@ def sample_b_spline_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
         ])        
-    out = tm.max(spline_b_spline(p, dx, dy), 0.)
+    out = tm.max(cubic_b_spline(p, dx, dy), 0.)
 
     return out
 
 @ti.func
 def sample_b_spline_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (uv.x * repeat_h) % 1.
@@ -997,7 +1006,7 @@ def sample_b_spline_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
     y0 = tm.min(y1-1, int(height - 1))
     x2 = (x1+1) % width
     y2 = tm.min(y1+1, int(height - 1))
-    x3 = (x1+3) % width
+    x3 = (x1+2) % width
     y3 = tm.min(y1+2, int(height - 1))
 
     xofs, yofs = int(window.x), int(window.y)
@@ -1034,13 +1043,14 @@ def sample_b_spline_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
-        out[ch] = tm.max(spline_b_spline(p, dx, dy), 0.)
+        out[ch] = tm.max(cubic_b_spline(p, dx, dy), 0.)
 
     return out
 
 @ti.func
 def sample_b_spline_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (uv.x * repeat_h) % 1.
@@ -1054,7 +1064,7 @@ def sample_b_spline_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, 
     y0 = tm.min(y1-1, int(height - 1))
     x2 = (x1+1) % width
     y2 = tm.min(y1+1, int(height - 1))
-    x3 = (x1+3) % width
+    x3 = (x1+2) % width
     y3 = tm.min(y1+2, int(height - 1))
 
     xofs, yofs = int(window.x), int(window.y)
@@ -1088,13 +1098,14 @@ def sample_b_spline_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, 
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
         ])        
-    out = tm.max(spline_b_spline(p, dx, dy), 0.)
+    out = tm.max(cubic_b_spline(p, dx, dy), 0.)
 
     return out
 
 @ti.func
 def sample_b_spline_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (tm.clamp(uv.x, 0. + hp.x, 1. - hp.x) * repeat_h) % 1.
@@ -1144,13 +1155,14 @@ def sample_b_spline_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
-        out[ch] = tm.max(spline_b_spline(p, dx, dy), 0.)
+        out[ch] = tm.max(cubic_b_spline(p, dx, dy), 0.)
 
     return out
 
 @ti.func
 def sample_b_spline_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (tm.clamp(uv.x, 0. + hp.x, 1. - hp.x) * repeat_h) % 1.
@@ -1198,7 +1210,7 @@ def sample_b_spline_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, 
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
         ])        
-    out = tm.max(spline_b_spline(p, dx, dy), 0.)
+    out = tm.max(cubic_b_spline(p, dx, dy), 0.)
 
     return out
 
@@ -1352,7 +1364,7 @@ def sample_mitchell_netravali_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
-        out[ch] = tm.max(spline_mitchell_netravali(p, dx, dy, b, c), 0.)
+        out[ch] = tm.max(cubic_mitchell_netravali(p, dx, dy, b, c), 0.)
 
 @ti.func
 def sample_mitchell_netravali_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float):
@@ -1401,13 +1413,14 @@ def sample_mitchell_netravali_repeat_float(tex:ti.template(), uv:tm.vec2, repeat
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
         ])        
-    out = tm.max(spline_mitchell_netravali(p, dx, dy, b, c), 0.)
+    out = tm.max(cubic_mitchell_netravali(p, dx, dy, b, c), 0.)
 
     return out
 
 @ti.func
 def sample_mitchell_netravali_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (tm.clamp(uv.x, 0. + hp.x, 1. - hp.x) * repeat_h) % 1.
@@ -1458,12 +1471,13 @@ def sample_mitchell_netravali_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
-        out[ch] = tm.max(spline_mitchell_netravali(p, dx, dy, b, c), 0.)
+        out[ch] = tm.max(cubic_mitchell_netravali(p, dx, dy, b, c), 0.)
     return out
 
 @ti.func
 def sample_mitchell_netravali_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (tm.clamp(uv.x, 0. + hp.x, 1. - hp.x) * repeat_h) % 1.
@@ -1511,13 +1525,14 @@ def sample_mitchell_netravali_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
         ])        
-    out = tm.max(spline_mitchell_netravali(p, dx, dy, b, c), 0.)
+    out = tm.max(cubic_mitchell_netravali(p, dx, dy, b, c), 0.)
 
     return out
 
 @ti.func
 def sample_mitchell_netravali_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (uv.x * repeat_h) % 1.
@@ -1531,7 +1546,7 @@ def sample_mitchell_netravali_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat
     y0 = tm.min(y1-1, int(height - 1))
     x2 = (x1+1) % width
     y2 = tm.min(y1+1, int(height - 1))
-    x3 = (x1+3) % width
+    x3 = (x1+2) % width
     y3 = tm.min(y1+2, int(height - 1))
 
     xofs, yofs = int(window.x), int(window.y)
@@ -1568,13 +1583,14 @@ def sample_mitchell_netravali_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
-        out[ch] = tm.max(spline_mitchell_netravali(p, dx, dy, b, c), 0.)
+        out[ch] = tm.max(cubic_mitchell_netravali(p, dx, dy, b, c), 0.)
 
     return out
 
 @ti.func
 def sample_mitchell_netravali_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (uv.x * repeat_h) % 1.
@@ -1588,7 +1604,7 @@ def sample_mitchell_netravali_repeat_x_float(tex:ti.template(), uv:tm.vec2, repe
     y0 = tm.min(y1-1, int(height - 1))
     x2 = (x1+1) % width
     y2 = tm.min(y1+1, int(height - 1))
-    x3 = (x1+3) % width
+    x3 = (x1+2) % width
     y3 = tm.min(y1+2, int(height - 1))
 
     xofs, yofs = int(window.x), int(window.y)
@@ -1622,13 +1638,14 @@ def sample_mitchell_netravali_repeat_x_float(tex:ti.template(), uv:tm.vec2, repe
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
         ])        
-    out = tm.max(spline_mitchell_netravali(p, dx, dy, b, c), 0.)
+    out = tm.max(cubic_mitchell_netravali(p, dx, dy, b, c), 0.)
 
     return out
 
 @ti.func
 def sample_mitchell_netravali_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (tm.clamp(uv.x, 0. + hp.x, 1. - hp.x) * repeat_h) % 1.
@@ -1678,13 +1695,14 @@ def sample_mitchell_netravali_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
-        out[ch] = tm.max(spline_mitchell_netravali(p, dx, dy, b, c), 0.)
+        out[ch] = tm.max(cubic_mitchell_netravali(p, dx, dy, b, c), 0.)
 
     return out
 
 @ti.func
 def sample_mitchell_netravali_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
+    hp = tm.vec2(0.5 / width, 0.5 / height)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
     uvb.x = (tm.clamp(uv.x, 0. + hp.x, 1. - hp.x) * repeat_h) % 1.
@@ -1732,7 +1750,7 @@ def sample_mitchell_netravali_repeat_y_float(tex:ti.template(), uv:tm.vec2, repe
         [q20, q21, q22, q23],
         [q30, q31, q32, q33]
         ])        
-    out = tm.max(spline_mitchell_netravali(p, dx, dy, b, c), 0.)
+    out = tm.max(cubic_mitchell_netravali(p, dx, dy, b, c), 0.)
 
     return out
 
