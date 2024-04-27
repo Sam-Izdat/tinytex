@@ -24,8 +24,9 @@ class FilterMode(IntEnum):
     MITCHELL_NETRAVALI  = 1<<5 # Bicubic
     CATMULL_ROM         = 1<<6 # Bicubic
 
-    SUPPORTED_2D = NEAREST | BILINEAR | HERMITE | B_SPLINE | MITCHELL_NETRAVALI | CATMULL_ROM
-    SUPPORTED_3D = NEAREST | TRILINEAR
+    SUPPORTED_2D    = NEAREST | BILINEAR | HERMITE | B_SPLINE | MITCHELL_NETRAVALI | CATMULL_ROM
+    SUPPORTED_3D    = NEAREST | TRILINEAR
+    SUPPORTED_GRID  = NEAREST | BILINEAR | B_SPLINE
 
 class WrapMode(IntEnum):
     """Texture wrap mode"""
@@ -36,11 +37,12 @@ class WrapMode(IntEnum):
 
     # TODO: MIRROR, etc
 
-    SUPPORTED_2D = REPEAT | CLAMP | REPEAT_X | REPEAT_Y
-    SUPPORTED_3D = REPEAT | CLAMP | REPEAT_X | REPEAT_Y
+    SUPPORTED_2D    = REPEAT | CLAMP | REPEAT_X | REPEAT_Y
+    SUPPORTED_3D    = REPEAT | CLAMP | REPEAT_X | REPEAT_Y
+    SUPPORTED_GRID  = REPEAT | CLAMP
 
 @ti.func
-def interpolant_cubic_hermite_spline(p:tm.vec4, x:float) -> float:
+def compute_cubic_hermite_spline(p, x:float) -> float:
     # Alternative formulation:
     x_squared = x**2
     x_cubed = x**3
@@ -51,7 +53,7 @@ def interpolant_cubic_hermite_spline(p:tm.vec4, x:float) -> float:
     # return p[1] + 0.5 * x*(p[2] - p[0] + x*(2.0*p[0] - 5.0*p[1] + 4.0*p[2] - p[3] + x*(3.0*(p[1] - p[2]) + p[3] - p[0])))
 
 @ti.func
-def interpolant_b_spline(p:tm.vec4, x:float) -> float:
+def compute_b_spline(p:tm.vec4, x:float) -> float:
     third = (1./3.)
     sixth = (1./6.)
     x_squared = x**2
@@ -63,7 +65,7 @@ def interpolant_b_spline(p:tm.vec4, x:float) -> float:
     return out
 
 @ti.func
-def interpolant_mitchell_netravali(p:tm.vec4, x:float, b:float, c:float) -> float:
+def compute_mitchell_netravali_spline(p:tm.vec4, x:float, b:float, c:float) -> float:
     third = (1./3.)
     sixth = (1./6.)
     B, C = b, c
@@ -78,29 +80,29 @@ def interpolant_mitchell_netravali(p:tm.vec4, x:float, b:float, c:float) -> floa
 @ti.func
 def spline_cubic_hermite(p:tm.mat4, x:float, y:float) -> float:
     arr = tm.vec4(0.)
-    arr[0] = interpolant_cubic_hermite_spline(tm.vec4(p[0,:]), y)
-    arr[1] = interpolant_cubic_hermite_spline(tm.vec4(p[1,:]), y)
-    arr[2] = interpolant_cubic_hermite_spline(tm.vec4(p[2,:]), y)
-    arr[3] = interpolant_cubic_hermite_spline(tm.vec4(p[3,:]), y)
-    return interpolant_cubic_hermite_spline(arr, x)
+    arr[0] = compute_cubic_hermite_spline(tm.vec4(p[0,:]), y)
+    arr[1] = compute_cubic_hermite_spline(tm.vec4(p[1,:]), y)
+    arr[2] = compute_cubic_hermite_spline(tm.vec4(p[2,:]), y)
+    arr[3] = compute_cubic_hermite_spline(tm.vec4(p[3,:]), y)
+    return compute_cubic_hermite_spline(arr, x)
 
 @ti.func
 def spline_b_spline(p:tm.mat4, x:float, y:float) -> float:
     arr = tm.vec4(0.)
-    arr[0] = interpolant_b_spline(tm.vec4(p[0,:]), y)
-    arr[1] = interpolant_b_spline(tm.vec4(p[1,:]), y)
-    arr[2] = interpolant_b_spline(tm.vec4(p[2,:]), y)
-    arr[3] = interpolant_b_spline(tm.vec4(p[3,:]), y)
-    return interpolant_b_spline(arr, x)
+    arr[0] = compute_b_spline(tm.vec4(p[0,:]), y)
+    arr[1] = compute_b_spline(tm.vec4(p[1,:]), y)
+    arr[2] = compute_b_spline(tm.vec4(p[2,:]), y)
+    arr[3] = compute_b_spline(tm.vec4(p[3,:]), y)
+    return compute_b_spline(arr, x)
 
 @ti.func
 def spline_mitchell_netravali(p:tm.mat4, x:float, y:float, b:float, c:float) -> float:
     arr = tm.vec4(0.)
-    arr[0] = interpolant_mitchell_netravali(tm.vec4(p[0,:]), y, b, c)
-    arr[1] = interpolant_mitchell_netravali(tm.vec4(p[1,:]), y, b, c)
-    arr[2] = interpolant_mitchell_netravali(tm.vec4(p[2,:]), y, b, c)
-    arr[3] = interpolant_mitchell_netravali(tm.vec4(p[3,:]), y, b, c)
-    return interpolant_mitchell_netravali(arr, x, b, c)
+    arr[0] = compute_mitchell_netravali_spline(tm.vec4(p[0,:]), y, b, c)
+    arr[1] = compute_mitchell_netravali_spline(tm.vec4(p[1,:]), y, b, c)
+    arr[2] = compute_mitchell_netravali_spline(tm.vec4(p[2,:]), y, b, c)
+    arr[3] = compute_mitchell_netravali_spline(tm.vec4(p[3,:]), y, b, c)
+    return compute_mitchell_netravali_spline(arr, x, b, c)
 
 
 # ------------------------------------------------------
@@ -678,13 +680,6 @@ def sample_b_spline_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repe
 
     out = q11
     p = tm.mat4(0.)
-    # mat 
-    # 00 01 02 03
-    # 10 11 12 13
-    # 20 21 22 23
-    # 30 31 32 33
-    #
-    # n is tex.n on vector fields but does not exist for float
     for ch in range(n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
@@ -1220,13 +1215,6 @@ def sample_mitchell_netravali_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w
 
     out = q11
     p = tm.mat4(0.)
-    # mat 
-    # 00 01 02 03
-    # 10 11 12 13
-    # 20 21 22 23
-    # 30 31 32 33
-    #
-    # n is tex.n on vector fields but does not exist for float
     for ch in range(n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
@@ -2189,6 +2177,40 @@ def sample_indexed_bilinear(
         return out
 
 
+# @ti.data_oriented
+# class SamplerGrid2D:
+#     """
+#     Taichi 2D grid-of-textures sampler. 2D interpolation on 2D textures, additionally 
+#     themselves spatially interpolated on a 2D texture grid. Useful for probe sampling.
+
+#     :param grid_rows: Number of rows in the grid.
+#     :param grid_cols: Number of columns in the grid.
+#     :param repeat_w: Number of times to repeat image horizontally.
+#     :param repeat_h: Number of times to repeat image vertically.
+#     :param filter_mode_grid: Filter mode for sampling the texture grid.
+#     :param filter_mode_tex: Filter mode for sampling the textures on the grid.
+#     :param wrap_mode_grid: Wrap mode for sampling the texture grid.
+#     :param wrap_mode_tex: Wrap mode for sampling the textures on the grid.
+#     """
+
+
+
+# @ti.data_oriented
+# class SamplerGrid2DWeighted:
+#     """
+#     Taichi 2D grid-of-textures sampler. 2D interpolation on 2D textures, additionally 
+#     themselves spatially interpolated on a 2D texture grid. Grid samples are weighted.
+#     Useful for probe sampling.
+
+#     :param grid_rows: Number of rows in the grid.
+#     :param grid_cols: Number of columns in the grid.
+#     :param repeat_w: Number of times to repeat image horizontally.
+#     :param repeat_h: Number of times to repeat image vertically.
+#     :param filter_mode_grid: Filter mode for sampling the texture grid.
+#     :param filter_mode_tex: Filter mode for sampling the textures on the grid.
+#     :param wrap_mode_grid: Wrap mode for sampling the texture grid.
+#     :param wrap_mode_tex: Wrap mode for sampling the textures on the grid.
+#     """
 
 
 @ti.data_oriented
@@ -2595,6 +2617,12 @@ class Sampler2D:
         if ti.static(tex.channels == 4):
             return self._fetch_rgba(tex, xy)
 
+# @ti.data_oriented
+# class TextureGrid2D:
+#     """
+#     Taichi spatial grid of 2D read-write textures. Can be initialized with either texture shape or texture data. 
+#     Mipmapping is not supported.
+#     """
 
 @ti.data_oriented
 class Texture2D:
