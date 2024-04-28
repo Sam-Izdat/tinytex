@@ -165,6 +165,8 @@ def sample_hermite_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repea
             ])        
         out[ch] = tm.max(cubic_hermite(p, dx, dy), 0.)
 
+    return out
+
 @ti.func
 def sample_hermite_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
@@ -824,6 +826,8 @@ def sample_b_spline_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repe
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
         out[ch] = tm.max(cubic_b_spline(p, dx, dy), 0.)
+        
+    return out
 
 @ti.func
 def sample_b_spline_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
@@ -1365,6 +1369,8 @@ def sample_mitchell_netravali_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w
             [q30[ch], q31[ch], q32[ch], q33[ch]]
             ])        
         out[ch] = tm.max(cubic_mitchell_netravali(p, dx, dy, b, c), 0.)
+
+    return out
 
 @ti.func
 def sample_mitchell_netravali_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float):
