@@ -4,6 +4,12 @@ titexture
 Taichi texture sampling module. Supports CPU, CUDA and Vulkan backends.
  """
 
+# NOTE: The filtering here is inefficient and does not even use hardware-native sampling. 
+# The purpose of this module is convenience, but there's a lot of room for optimization. See: 
+# https://developer.nvidia.com/gpugems/gpugems2/part-iii-high-quality-rendering/chapter-20-fast-third-order-texture-filtering
+# Radiance cascades probe grids, however, cannot have adjacent texels and so, as hardware linear interpolation can't be exploited,
+# they are not suitable for third order interpolation/approximation with the above approach.
+
 import typing
 from typing import Union
 
@@ -112,8 +118,8 @@ def sample_hermite_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repea
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -172,8 +178,8 @@ def sample_hermite_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -222,13 +228,14 @@ def sample_hermite_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
 def sample_hermite_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
 
     x1, y1 = int(pos.x), int(pos.y)
     x0 = tm.min(x1-1, int(width - 1))
@@ -280,13 +287,14 @@ def sample_hermite_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat
 def sample_hermite_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
 
     x1, y1 = int(pos.x), int(pos.y)
     x0 = tm.min(x1-1, int(width - 1))
@@ -335,13 +343,14 @@ def sample_hermite_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repe
 def sample_hermite_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
 
     x1, y1 = int(pos.x), int(pos.y)
     x0 = (x1-1) % width
@@ -393,13 +402,14 @@ def sample_hermite_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
 def sample_hermite_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
 
     x1, y1 = int(pos.x), int(pos.y)
     x0 = (x1-1) % width
@@ -448,12 +458,13 @@ def sample_hermite_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, r
 def sample_hermite_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
 
     x1, y1 = int(pos.x), int(pos.y)
@@ -505,12 +516,13 @@ def sample_hermite_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
 def sample_hermite_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
 
     x1, y1 = int(pos.x), int(pos.y)
@@ -644,6 +656,7 @@ def sample_hermite_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
 
 @ti.func
 def dxdy_2D_grid_cubic(
+    canvas_shape:tm.vec2,
     xy_grid:tm.vec2, 
     grid_height:int, 
     grid_width:int, 
@@ -657,10 +670,9 @@ def dxdy_2D_grid_cubic(
     Returns cubic indices, gradients and positions on 2D grid, inside a kernel, given denormalized xy position.
     Intended for probe grid intepolation/approximation. Grid is clamped at the edges.
     """
-    canvas_shape = tm.vec2(float(self.canvas_shape[1]), float(self.canvas_shape[0]))
     probe_halfheight = probe_height * 0.5
     probe_halfwidth = probe_width * 0.5
-    hps = 1. / (canvas_shape * 2.)
+    hps = 0.5 / canvas_shape
     padded_kernel = tm.vec2(kernel_width + probe_pad * probe_width * 2, kernel_height + probe_pad * probe_height * 2)
     xy = tm.vec2(xy_grid.x + probe_pad * probe_width, xy_grid.y + probe_pad * probe_height)
     uv_grid = tm.clamp(xy / padded_kernel, 0., 1.)
@@ -781,8 +793,8 @@ def sample_b_spline_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repe
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -834,8 +846,8 @@ def sample_b_spline_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -884,13 +896,14 @@ def sample_b_spline_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
 def sample_b_spline_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
 
     x1, y1 = int(pos.x), int(pos.y)
     x0 = tm.min(x1-1, int(width - 1))
@@ -942,13 +955,14 @@ def sample_b_spline_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repea
 def sample_b_spline_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
 
     x1, y1 = int(pos.x), int(pos.y)
     x0 = tm.min(x1-1, int(width - 1))
@@ -997,13 +1011,14 @@ def sample_b_spline_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
 def sample_b_spline_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
 
     x1, y1 = int(pos.x), int(pos.y)
     x0 = (x1-1) % width
@@ -1046,7 +1061,7 @@ def sample_b_spline_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
             [q10[ch], q11[ch], q12[ch], q13[ch]],
             [q20[ch], q21[ch], q22[ch], q23[ch]],
             [q30[ch], q31[ch], q32[ch], q33[ch]]
-            ])        
+            ])
         out[ch] = tm.max(cubic_b_spline(p, dx, dy), 0.)
 
     return out
@@ -1055,13 +1070,14 @@ def sample_b_spline_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
 def sample_b_spline_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
 
     x1, y1 = int(pos.x), int(pos.y)
     x0 = (x1-1) % width
@@ -1110,12 +1126,13 @@ def sample_b_spline_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, 
 def sample_b_spline_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
 
     x1, y1 = int(pos.x), int(pos.y)
@@ -1167,12 +1184,13 @@ def sample_b_spline_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
 def sample_b_spline_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
 
     x1, y1 = int(pos.x), int(pos.y)
@@ -1324,8 +1342,8 @@ def sample_mitchell_netravali_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -1377,8 +1395,8 @@ def sample_mitchell_netravali_repeat_float(tex:ti.template(), uv:tm.vec2, repeat
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -1427,13 +1445,14 @@ def sample_mitchell_netravali_repeat_float(tex:ti.template(), uv:tm.vec2, repeat
 def sample_mitchell_netravali_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
 
     x1, y1 = int(pos.x), int(pos.y)
     x0 = tm.min(x1-1, int(width - 1))
@@ -1484,13 +1503,14 @@ def sample_mitchell_netravali_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:
 def sample_mitchell_netravali_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
 
     x1, y1 = int(pos.x), int(pos.y)
     x0 = tm.min(x1-1, int(width - 1))
@@ -1539,13 +1559,14 @@ def sample_mitchell_netravali_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_
 def sample_mitchell_netravali_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
 
     x1, y1 = int(pos.x), int(pos.y)
     x0 = (x1-1) % width
@@ -1597,13 +1618,14 @@ def sample_mitchell_netravali_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat
 def sample_mitchell_netravali_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
 
     x1, y1 = int(pos.x), int(pos.y)
     x0 = (x1-1) % width
@@ -1652,12 +1674,13 @@ def sample_mitchell_netravali_repeat_x_float(tex:ti.template(), uv:tm.vec2, repe
 def sample_mitchell_netravali_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
 
     x1, y1 = int(pos.x), int(pos.y)
@@ -1709,12 +1732,13 @@ def sample_mitchell_netravali_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat
 def sample_mitchell_netravali_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
 
     x1, y1 = int(pos.x), int(pos.y)
@@ -1855,7 +1879,6 @@ def sample_mitchell_netravali_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repea
 def sample_nn_repeat(
     tex:ti.template(), 
     uv:tm.vec2, 
-    wrap_mode:int, 
     repeat_w:int, 
     repeat_h:int,  
     window:tm.ivec4) -> ti.template():
@@ -1872,7 +1895,6 @@ def sample_nn_repeat(
 def sample_nn_clamp(
     tex:ti.template(), 
     uv:tm.vec2, 
-    wrap_mode:int, 
     repeat_w:int, 
     repeat_h:int,  
     window:tm.ivec4) -> ti.template():
@@ -1889,7 +1911,6 @@ def sample_nn_clamp(
 def sample_nn_repeat_x(
     tex:ti.template(), 
     uv:tm.vec2, 
-    wrap_mode:int, 
     repeat_w:int, 
     repeat_h:int,  
     window:tm.ivec4) -> ti.template():
@@ -1906,7 +1927,6 @@ def sample_nn_repeat_x(
 def sample_nn_repeat_y(
     tex:ti.template(), 
     uv:tm.vec2, 
-    wrap_mode:int, 
     repeat_w:int, 
     repeat_h:int,  
     window:tm.ivec4) -> ti.template():
@@ -2007,6 +2027,7 @@ def sample_nn_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_
 
 @ti.func
 def dxdy_2D_grid_bilinear(
+    canvas_shape:tm.vec2,
     xy_grid:tm.vec2, 
     grid_height:int, 
     grid_width:int, 
@@ -2020,7 +2041,6 @@ def dxdy_2D_grid_bilinear(
     Returns bilinear indices, gradients and positions on 2D grid, inside a kernel, given denormalized xy position.
     Intended for probe grid interpolation. Grid is clamped at the edges.
     """
-    canvas_shape = tm.vec2(float(self.canvas_shape[1]), float(self.canvas_shape[0]))
     probe_halfheight = probe_height * 0.5
     probe_halfwidth = probe_width * 0.5
     padded_kernel = tm.vec2(kernel_width + probe_pad * probe_width * 2, kernel_height + probe_pad * probe_height * 2)
@@ -2073,6 +2093,7 @@ def dxdy_2D_grid_bilinear(
 
     return indices, tm.vec2(dx, dy), pos_x, pos_y
 
+
 @ti.func
 def dxdy_bilinear_clamp(
     uv:tm.vec2,
@@ -2082,12 +2103,13 @@ def dxdy_bilinear_clamp(
     repeat_h:int,
     ) -> tuple:
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h)
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w)
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.) 
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
     x0, y0 = int(pos.x), int(pos.y)
     dx = pos.x - float(x0)
     dy = pos.y - float(y0)
@@ -2103,7 +2125,7 @@ def dxdy_bilinear_repeat(
     repeat_w:int,
     repeat_h:int,
     ) -> tuple:
-    uvb = (uv * tm.vec2(repeat_h, repeat_w)) % 1.
+    uvb = (uv * tm.vec2(repeat_w, repeat_h)) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -2123,17 +2145,18 @@ def dxdy_bilinear_repeat_x(
     repeat_h:int,
     ) -> tuple:
     hpy = 0.5 / height
+    eps = 1e-7
     uvb = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hpy, 1. - hpy) * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hpy, 1. - hpy)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
-    pos.y = (pos.y - 0.5) % height
+    pos.x = (pos.x - 0.5) % width
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
     x0, y0 = int(pos.x), int(pos.y)
     dx = pos.x - float(x0)
     dy = pos.y - float(y0)
-    x1 = tm.min(x0+1, int(width - 1))
-    y1 = (y0+1) % height
+    x1 = (x0+1) % width
+    y1 = tm.min(y0+1, int(height - 1))
     return tm.ivec4(x0, y0, x1, y1), tm.vec2(dx, dy)
 
 @ti.func
@@ -2145,35 +2168,34 @@ def dxdy_bilinear_repeat_y(
     repeat_h:int,
     ) -> tuple:
     hpx = 0.5 / width
+    eps = 1e-7
     uvb = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hpx, 1. - hpx) * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hpx, 1. - hpx)
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = (pos.x - 0.5) % width
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
+    pos.y = (pos.y - 0.5) % height
     x0, y0 = int(pos.x), int(pos.y)
     dx = pos.x - float(x0)
     dy = pos.y - float(y0)
-    x1 = (x0+1) % width
-    y1 = tm.min(y0+1, int(height - 1))
+    x1 = tm.min(x0+1, int(width - 1))
+    y1 = (y0+1) % height
     return tm.ivec4(x0, y0, x1, y1), tm.vec2(dx, dy)
+
 
 @ti.func
 def sample_bilinear_repeat(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
-    width, height = int(window.z - window.x), int(window.w - window.y)
-    uvb = tm.vec2(0.)
-    pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    width, height = int(window.z - window.x), int(window.w - window.y) 
+    uvb = (uv * tm.vec2(repeat_w, repeat_h)) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
     x0, y0 = int(pos.x), int(pos.y)
+    dx = pos.x - float(x0)
+    dy = pos.y - float(y0)
     x1 = (x0+1) % width
     y1 = (y0+1) % height
     xofs, yofs = int(window.x), int(window.y)
-    dx = pos.x - float(x0)
-    dy = pos.y - float(y0)
     q00 = tex[yofs + y0, xofs + x0]
     q01 = tex[yofs + y1, xofs + x0]
     q10 = tex[yofs + y0, xofs + x1]
@@ -2187,19 +2209,19 @@ def sample_bilinear_repeat(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h
 def sample_bilinear_clamp(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
+    eps = 1e-7
     uvb = tm.vec2(0.)
-    pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hp.x, 1. - hp.x) * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hp.y, 1. - hp.y) * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.) 
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
     x0, y0 = int(pos.x), int(pos.y)
+    dx = pos.x - float(x0)
+    dy = pos.y - float(y0)
     x1 = tm.min(x0+1, int(width - 1))
     y1 = tm.min(y0+1, int(height - 1))
     xofs, yofs = int(window.x), int(window.y)
-    dx = pos.x - float(x0)
-    dy = pos.y - float(y0)
     q00 = tex[yofs + y0, xofs + x0]
     q01 = tex[yofs + y1, xofs + x0]
     q10 = tex[yofs + y0, xofs + x1]
@@ -2213,19 +2235,19 @@ def sample_bilinear_clamp(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:
 def sample_bilinear_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hpy = 0.5 / height
+    eps = 1e-7
     uvb = tm.vec2(0.)
-    pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_h) % 1.
-    uvb.y = (tm.clamp(uv.y, hpy, 1. - hpy) * repeat_w) % 1.
+    uvb.x = (uv.x * repeat_w) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hpy, 1. - hpy)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
-    pos.y = tm.clamp(pos.y, 0., height - 1.)
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
     x0, y0 = int(pos.x), int(pos.y)
+    dx = pos.x - float(x0)
+    dy = pos.y - float(y0)
     x1 = (x0+1) % width
     y1 = tm.min(y0+1, int(height - 1))
     xofs, yofs = int(window.x), int(window.y)
-    dx = pos.x - float(x0)
-    dy = pos.y - float(y0)
     q00 = tex[yofs + y0, xofs + x0]
     q01 = tex[yofs + y1, xofs + x0]
     q10 = tex[yofs + y0, xofs + x1]
@@ -2239,19 +2261,19 @@ def sample_bilinear_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat
 def sample_bilinear_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hpx = 0.5 / width
+    eps = 1e-7
     uvb = tm.vec2(0.)
-    pos = tm.vec2(0.)
-    uvb.x = (tm.clamp(uv.x, hpx, 1. - hpx) * repeat_h) % 1.
-    uvb.y = (uv.y * repeat_w) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hpx, 1. - hpx)
+    uvb.y = (uv.y * repeat_h) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
-    pos.x = tm.clamp(pos.x, 0., width - 1.)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
     x0, y0 = int(pos.x), int(pos.y)
-    x1 = tm.min(x0+1, int(width - 1))
-    y1 = (y0+1) % height    
-    xofs, yofs = int(window.x), int(window.y)
     dx = pos.x - float(x0)
     dy = pos.y - float(y0)
+    x1 = tm.min(x0+1, int(width - 1))
+    y1 = (y0+1) % height
+    xofs, yofs = int(window.x), int(window.y)
     q00 = tex[yofs + y0, xofs + x0]
     q01 = tex[yofs + y1, xofs + x0]
     q10 = tex[yofs + y0, xofs + x1]
@@ -2380,19 +2402,19 @@ def sample_indexed_bilinear(
     q1 = tm.mix(q01, q11, dxdy.x)
 
     if ti.static(tex.n == 1):
-        out = 0.
+        # out = 0.
         out = tm.mix(q0, q1, dxdy.y)
         return out
     elif ti.static(tex.n == 2):
-        out = tm.vec2(0.)
+        # out = tm.vec2(0.)
         out = tm.mix(q0, q1, dxdy.y)
         return out
     elif ti.static(tex.n == 3):
-        out = tm.vec3(0.)
+        # out = tm.vec3(0.)
         out = tm.mix(q0, q1, dxdy.y)
         return out
     elif ti.static(tex.n == 4):
-        out = tm.vec4(0.)
+        # out = tm.vec4(0.)
         out = tm.mix(q0, q1, dxdy.y)
         return out
 
