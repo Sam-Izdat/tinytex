@@ -203,7 +203,7 @@ def dxdy_bilinear_repeat_y(
 
 @ti.func
 def dxdy_2D_scoped_grid_bilinear(
-    xy_grid:tm.vec2, 
+    xy_kernel:tm.vec2, 
     grid_height:int, 
     grid_width:int, 
     probe_height:int, 
@@ -213,11 +213,20 @@ def dxdy_2D_scoped_grid_bilinear(
     kernel_width:float,
     wrap_mode:int) -> (tm.ivec4, tm.vec2):
     """
-    Returns bilinear indices, gradients and positions on 2D grid, inside a kernel, given denormalized xy position.
-    Intended for probe grid interpolation. Grid is clamped at the edges.
+    Return bilinear indices and deltas for 2D grid, subdividing a kernel, given denormalized xy texel position.
+    Intended for probe grid interpolation. Kernel size excludes padded grid cells. Example:
 
     .. highlight:: text
     .. code-block:: text
+        
+        xy_kernel:     [5, 3]
+        grid_height:   3
+        grid_width:    4
+        probe_height:  2
+        probe_width:   3
+        probe_pad:     0
+        kernel_height: 6
+        kernel_width:  12
 
         |ooo|ooo|ooo|ooo|
         |ooo|ooo|ooo|ooo|
@@ -229,7 +238,7 @@ def dxdy_2D_scoped_grid_bilinear(
         |ooo|ooo|ooo|ooo|
     """
     padded_kernel = tm.vec2(kernel_width + probe_pad * probe_width * 2, kernel_height + probe_pad * probe_height * 2)
-    xy = tm.vec2(xy_grid.x + probe_pad * probe_width, xy_grid.y + probe_pad * probe_height)
+    xy = tm.vec2(xy_kernel.x + probe_pad * probe_width, xy_kernel.y + probe_pad * probe_height)
     uv_grid = xy / padded_kernel
 
     indices, dxdy = tm.ivec4(0), tm.vec2(0.)
@@ -365,7 +374,7 @@ def dxdy_cubic_repeat_y(
 
 @ti.func
 def dxdy_2D_scoped_grid_cubic(
-    xy_grid:tm.vec2, 
+    xy_kernel:tm.vec2, 
     grid_height:int, 
     grid_width:int, 
     probe_height:int, 
@@ -375,12 +384,33 @@ def dxdy_2D_scoped_grid_cubic(
     kernel_width:float,
     wrap_mode:int) -> (tm.mat4, tm.vec2): #(ivec16, vec16, tm.vec2):
     """
-    Returns cubic indices, gradients and positions on 2D grid, inside a kernel, given denormalized xy position.
-    Intended for probe grid intepolation/approximation. Grid is clamped at the edges.
+    Return cubic indices and deltas for 2D grid, subdividing a kernel, given denormalized xy texel position.
+    Intended for probe grid intepolation/approximation. Kernel size excludes padded grid cells. Example:
+
+    .. highlight:: text
+    .. code-block:: text
+        
+        xy_kernel:     [5, 3]
+        grid_height:   3
+        grid_width:    4
+        probe_height:  2
+        probe_width:   3
+        probe_pad:     0
+        kernel_height: 6
+        kernel_width:  12
+
+        |ooo|ooo|ooo|ooo|
+        |ooo|ooo|ooo|ooo|
+        -----------------
+        |ooo|oox|ooo|ooo|
+        |ooo|ooo|ooo|ooo|
+        -----------------
+        |ooo|ooo|ooo|ooo|
+        |ooo|ooo|ooo|ooo|
     """
 
     padded_kernel = tm.vec2(kernel_width + probe_pad * probe_width * 2, kernel_height + probe_pad * probe_height * 2)
-    xy = tm.vec2(xy_grid.x + probe_pad * probe_width, xy_grid.y + probe_pad * probe_height)
+    xy = tm.vec2(xy_kernel.x + probe_pad * probe_width, xy_kernel.y + probe_pad * probe_height)
     uv_grid = xy / padded_kernel
 
     ix, iy, dxdy = tm.ivec4(0), tm.ivec4(0), tm.vec2(0.)
@@ -454,7 +484,7 @@ def sample_hermite_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repea
     # 30 31 32 33
     #
     # n is tex.n on vector fields but does not exist for float
-    for ch in range(n):
+    for ch in range(tex.n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
             [q10[ch], q11[ch], q12[ch], q13[ch]],
@@ -564,7 +594,7 @@ def sample_hermite_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat
     out = q11
     p = tm.mat4(0.)
 
-    for ch in range(n):
+    for ch in range(tex.n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
             [q10[ch], q11[ch], q12[ch], q13[ch]],
@@ -679,7 +709,7 @@ def sample_hermite_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
     out = q11
     p = tm.mat4(0.)
 
-    for ch in range(n):
+    for ch in range(tex.n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
             [q10[ch], q11[ch], q12[ch], q13[ch]],
@@ -793,7 +823,7 @@ def sample_hermite_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
 
     out = q11
     p = tm.mat4(0.)
-    for ch in range(n):
+    for ch in range(tex.n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
             [q10[ch], q11[ch], q12[ch], q13[ch]],
@@ -988,7 +1018,7 @@ def sample_b_spline_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repe
 
     out = q11
     p = tm.mat4(0.)
-    for ch in range(n):
+    for ch in range(tex.n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
             [q10[ch], q11[ch], q12[ch], q13[ch]],
@@ -1098,7 +1128,7 @@ def sample_b_spline_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repea
     out = q11
     p = tm.mat4(0.)
 
-    for ch in range(n):
+    for ch in range(tex.n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
             [q10[ch], q11[ch], q12[ch], q13[ch]],
@@ -1213,7 +1243,7 @@ def sample_b_spline_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
     out = q11
     p = tm.mat4(0.)
 
-    for ch in range(n):
+    for ch in range(tex.n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
             [q10[ch], q11[ch], q12[ch], q13[ch]],
@@ -1327,7 +1357,7 @@ def sample_b_spline_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
 
     out = q11
     p = tm.mat4(0.)
-    for ch in range(n):
+    for ch in range(tex.n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
             [q10[ch], q11[ch], q12[ch], q13[ch]],
@@ -1393,6 +1423,73 @@ def sample_b_spline_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, 
     out = tm.max(cubic_b_spline(p, dx, dy), 0.)
 
     return out
+
+
+@ti.func
+def sample_indexed_b_spline(
+    tex:ti.template(), 
+    uv:tm.vec2, 
+    idx:int,
+    wrap_mode:int, 
+    repeat_w:int, 
+    repeat_h:int, 
+    window:tm.ivec4):
+    width, height = int(window.z - window.x), int(window.w - window.y)
+
+    ix, iy = tm.ivec4(0), tm.ivec4(0)
+    dxdy = tm.vec2(0.)
+    if wrap_mode == WrapMode.CLAMP:
+        ix, iy, dxdy = dxdy_cubic_clamp(uv, width, height, repeat_w, repeat_h)
+    elif wrap_mode == WrapMode.REPEAT:
+        ix, iy, dxdy = dxdy_cubic_repeat(uv, width, height, repeat_w, repeat_h)
+    elif wrap_mode == WrapMode.REPEAT_X:
+        ix, iy, dxdy = dxdy_cubic_repeat_x(uv, width, height, repeat_w, repeat_h)
+    elif wrap_mode == WrapMode.REPEAT_Y:
+        ix, iy, dxdy = dxdy_cubic_repeat_y(uv, width, height, repeat_w, repeat_h)
+
+    xofs, yofs = int(window.x), int(window.y)
+
+    q00 = tex[idx, yofs + iy[0], xofs + ix[0]]
+    q01 = tex[idx, yofs + iy[1], xofs + ix[0]]
+    q02 = tex[idx, yofs + iy[2], xofs + ix[0]]
+    q03 = tex[idx, yofs + iy[3], xofs + ix[0]]
+
+    q10 = tex[idx, yofs + iy[0], xofs + ix[1]]
+    q11 = tex[idx, yofs + iy[1], xofs + ix[1]]
+    q12 = tex[idx, yofs + iy[2], xofs + ix[1]]
+    q13 = tex[idx, yofs + iy[3], xofs + ix[1]]
+
+    q20 = tex[idx, yofs + iy[0], xofs + ix[2]]
+    q21 = tex[idx, yofs + iy[1], xofs + ix[2]]
+    q22 = tex[idx, yofs + iy[2], xofs + ix[2]]
+    q23 = tex[idx, yofs + iy[3], xofs + ix[2]]
+
+    q30 = tex[idx, yofs + iy[0], xofs + ix[3]]
+    q31 = tex[idx, yofs + iy[1], xofs + ix[3]]
+    q32 = tex[idx, yofs + iy[2], xofs + ix[3]]
+    q33 = tex[idx, yofs + iy[3], xofs + ix[3]]
+
+    out = q11
+    if ti.static(tex.n == 1):
+        p = tm.mat4([
+            [q00, q01, q02, q03],
+            [q10, q11, q12, q13],
+            [q20, q21, q22, q23],
+            [q30, q31, q32, q33]
+            ])
+        out = tm.max(cubic_b_spline(p, dx, dy), 0.)
+        return out
+    else:
+        for ch in range(tex.n):
+            p = tm.mat4([
+                [q00[ch], q01[ch], q02[ch], q03[ch]],
+                [q10[ch], q11[ch], q12[ch], q13[ch]],
+                [q20[ch], q21[ch], q22[ch], q23[ch]],
+                [q30[ch], q31[ch], q32[ch], q33[ch]]
+                ])        
+            out[ch] = tm.max(cubic_b_spline(p, dxdy.x, dxdy.y), 0.)
+        return out
+
 
 # @ti.func
 # def sample_indexed_b_spline(
@@ -1617,7 +1714,7 @@ def sample_mitchell_netravali_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w
 
     out = q11
     p = tm.mat4(0.)
-    for ch in range(n):
+    for ch in range(tex.n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
             [q10[ch], q11[ch], q12[ch], q13[ch]],
@@ -1727,7 +1824,7 @@ def sample_mitchell_netravali_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:
     out = q11
     p = tm.mat4(0.)
 
-    for ch in range(n):
+    for ch in range(tex.n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
             [q10[ch], q11[ch], q12[ch], q13[ch]],
@@ -1841,7 +1938,7 @@ def sample_mitchell_netravali_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat
     out = q11
     p = tm.mat4(0.)
 
-    for ch in range(n):
+    for ch in range(tex.n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
             [q10[ch], q11[ch], q12[ch], q13[ch]],
@@ -1955,7 +2052,7 @@ def sample_mitchell_netravali_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat
 
     out = q11
     p = tm.mat4(0.)
-    for ch in range(n):
+    for ch in range(tex.n):
         p = tm.mat4([
             [q00[ch], q01[ch], q02[ch], q03[ch]],
             [q10[ch], q11[ch], q12[ch], q13[ch]],
