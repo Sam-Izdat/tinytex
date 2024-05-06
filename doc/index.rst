@@ -3,12 +3,14 @@ tinytex
 
 Python texture sampling, processing and synthesis library for PyTorch-involved projects.
 
-This library can be used to:
+This library is a hodgepodge of tangentially-related procedures useful for sampling, reinterpreting, 
+creating and modifying various kinds of textures. It can be used to:
 
+- sample 2D and 3D textures with Taichi (installed with Taichi optional requirement)
 - resample images
-- create and sample texture atlases
-- split and merge tiles
-- seamlessly stitch textures with color or vector data for mutual or self-tiling
+- create texture atlases and sample images from texture atlases
+- split images into tiles and merge tiles into images
+- seamlessly stitch textures with color or vector data for mutual tiling or self-tiling
 - compute and render 2D signed distance fields
 - compute and approximate surface geometry (normals/displacement/curvature)
 - approximate occlusion and bent normals
@@ -16,9 +18,8 @@ This library can be used to:
 - generate tiling noise
 - generate tiling masks from texture atlases
 - transform images to and from log-polar coordinate space
-- convert images to and from Haar wavelet coefficients
+- convert image data to and from Haar wavelet coefficients
 - compute chromatic point spread functions and approximate aperture diffraction
-- sample textures with Taichi (installed with Taichi optional requirement)
 
 Getting started
 ---------------

@@ -1,7 +1,28 @@
 from enum import IntEnum
 
 class FilterMode(IntEnum):
-    """Texture filter mode"""
+    """
+    Texture filter mode.
+
+    .. list-table:: Available Filter Modes:
+        :widths: 15 85
+        :header-rows: 1
+
+        * - Identifier
+          - Description
+        * - NEAREST
+          - Nearest neighbor - point sampling.
+        * - BILINEAR
+          - Bilinear interpolation.
+        * - HERMITE
+          - Cubic Hermite (bicubic) interpolation.
+        * - B_SPLINE
+          - B-spline approximation.
+        * - MITCHELL_NETRAVALI
+          - Mitchell-Netravali interpolation/approximation.
+        * - CATMULL_ROM
+          - Catmull-Rom interpolation.
+    """
     NEAREST             = 1<<0
     BILINEAR            = 1<<1
     TRILINEAR           = 1<<2
@@ -15,7 +36,26 @@ class FilterMode(IntEnum):
     SUPPORTED_GRID  = NEAREST | BILINEAR | B_SPLINE
 
 class WrapMode(IntEnum):
-    """Texture wrap mode"""
+    """
+    Texture wrap mode.
+
+    .. list-table:: Available Wrap Modes:
+        :widths: 15 85
+        :header-rows: 1
+
+        * - Identifier
+          - Description
+        * - REPEAT
+          - Repeat all dimensions.
+        * - CLAMP
+          - Clamp all dimentions.
+        * - REPEAT_X
+          - Repeat x/width only.
+        * - REPEAT_Y
+          - Repeat y/height only.
+        * - REPEAT_Z
+          - Repeat z/depth only.
+    """
     REPEAT      = 1<<0
     CLAMP       = 1<<1
     REPEAT_X    = 1<<2

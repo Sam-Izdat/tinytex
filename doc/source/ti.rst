@@ -7,12 +7,14 @@ ti module
 
     .. autosummary::
 
+        Texture2D
+
         FilterMode
         WrapMode
+
         Sampler2D
-        Texture2D
         Sampler3D
-        
+
         filter_cubic_hermite
         filter_cubic_b_spline
         filter_mitchell_netravali
@@ -20,6 +22,10 @@ ti module
         compute_cubic_hermite_spline
         compute_cubic_b_spline
         compute_bc_spline
+
+    .. autoclass:: Texture2D
+        :members:
+        :show-inheritance:
 
     .. autoclass:: FilterMode
         :members:
@@ -30,10 +36,6 @@ ti module
         :show-inheritance:
 
     .. autoclass:: Sampler2D
-        :members:
-        :show-inheritance:
-
-    .. autoclass:: Texture2D
         :members:
         :show-inheritance:
 
