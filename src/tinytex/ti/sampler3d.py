@@ -16,9 +16,9 @@ import numpy as np
 from .params import *
 
 @ti.func
-def sample_trilinear_clamp(im:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_h:int, repeat_d:int) -> ti.template():
-    tex = im[0, 0, 0]
-    width, height, depth = im.shape[0], im.shape[1], im.shape[2]
+def sample_trilinear_clamp(tex:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_h:int, repeat_d:int) -> ti.template():
+    tex = tex[0, 0, 0]
+    width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
     eps = 1e-7
 
     uvw = tm.clamp(uvw, 0., 1.-eps)
@@ -40,14 +40,14 @@ def sample_trilinear_clamp(im:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_h
     y1 = tm.min(y0+1, int(dim.y)-1)%height
     z1 = tm.min(z0+1, int(dim.z)-1)%depth
     
-    q000 = im[x0, y0, z0]
-    q001 = im[x0, y0, z1]
-    q010 = im[x0, y1, z0]
-    q100 = im[x1, y0, z0]
-    q011 = im[x0, y1, z1]
-    q101 = im[x1, y0, z1]
-    q110 = im[x1, y1, z0]
-    q111 = im[x1, y1, z1]
+    q000 = tex[x0, y0, z0]
+    q001 = tex[x0, y0, z1]
+    q010 = tex[x0, y1, z0]
+    q100 = tex[x1, y0, z0]
+    q011 = tex[x0, y1, z1]
+    q101 = tex[x1, y0, z1]
+    q110 = tex[x1, y1, z0]
+    q111 = tex[x1, y1, z1]
     
     q00 = tm.mix(q000, q100, dx)
     q01 = tm.mix(q001, q101, dx)
@@ -62,9 +62,9 @@ def sample_trilinear_clamp(im:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_h
 
 
 @ti.func
-def sample_trilinear_repeat(im:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_h:int, repeat_d:int) -> ti.template():
-    tex = im[0, 0, 0]
-    width, height, depth = im.shape[0], im.shape[1], im.shape[2]
+def sample_trilinear_repeat(tex:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_h:int, repeat_d:int) -> ti.template():
+    tex = tex[0, 0, 0]
+    width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
 
     uvw = uvw % 1.
 
@@ -81,14 +81,14 @@ def sample_trilinear_repeat(im:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_
     x0, y0, z0 = x0%width, y0%height, z0%depth
     x1, y1, z1 = (x0+1)%width, (y0+1)%height, (z0+1)%depth
     
-    q000 = im[x0, y0, z0]
-    q001 = im[x0, y0, z1]
-    q010 = im[x0, y1, z0]
-    q100 = im[x1, y0, z0]
-    q011 = im[x0, y1, z1]
-    q101 = im[x1, y0, z1]
-    q110 = im[x1, y1, z0]
-    q111 = im[x1, y1, z1]
+    q000 = tex[x0, y0, z0]
+    q001 = tex[x0, y0, z1]
+    q010 = tex[x0, y1, z0]
+    q100 = tex[x1, y0, z0]
+    q011 = tex[x0, y1, z1]
+    q101 = tex[x1, y0, z1]
+    q110 = tex[x1, y1, z0]
+    q111 = tex[x1, y1, z1]
     
     q00 = tm.mix(q000, q100, dx)
     q01 = tm.mix(q001, q101, dx)
@@ -103,9 +103,9 @@ def sample_trilinear_repeat(im:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_
 
 
 @ti.func
-def sample_nn_3d_repeat(im:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_h:int, repeat_d:int) -> ti.template():
-    tex = im[0, 0, 0]
-    width, height, depth = im.shape[0], im.shape[1], im.shape[2]
+def sample_nn_3d_repeat(tex:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_h:int, repeat_d:int) -> ti.template():
+    tex = tex[0, 0, 0]
+    width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
     if width > 1 or height > 1 or depth > 1:
         x, y, z = 0, 0, 0
         uvw = uvw % 1.
@@ -114,14 +114,14 @@ def sample_nn_3d_repeat(im:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_h:in
         y = int((uvw.y * float(height * repeat_h)) % height)
         z = int((uvw.z * float(depth * repeat_d)) % depth)
 
-        tex = im[x, y, z]
+        tex = tex[x, y, z]
     return tex
 
 @ti.func
-def sample_nn_3d_clamp(im:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_h:int, repeat_d:int) -> ti.template():
-    tex = im[0, 0, 0]
+def sample_nn_3d_clamp(tex:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_h:int, repeat_d:int) -> ti.template():
+    tex = tex[0, 0, 0]
     eps = 1e-7
-    width, height, depth = im.shape[0], im.shape[1], im.shape[2]
+    width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
     if width > 1 or height > 1 or depth > 1:
         x, y, z = 0, 0, 0
         uvw = tm.clamp(uvw, 0., 1.-eps)
@@ -130,11 +130,20 @@ def sample_nn_3d_clamp(im:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_h:int
         y = int((uvw.y * float(height * repeat_h)) % height)
         z = int((uvw.z * float(depth * repeat_d)) % depth)
 
-        tex = im[x, y, z]
+        tex = tex[x, y, z]
     return tex
 
 @ti.data_oriented
 class Sampler3D:
+    """
+    Taichi 3D texture sampler.
+
+    :param repeat_w: Number of times to repeat image width/x.
+    :param repeat_h: Number of times to repeat image height/y.
+    :param repeat_d: Number of times to repeat image depth/z.
+    :param filter_mode: Filter mode.
+    :param wrap_mode: Wrap mode.
+    """
     def __init__(self, 
         repeat_w:int=1, 
         repeat_h:int=1, 
@@ -150,20 +159,29 @@ class Sampler3D:
             raise Exception("Unsupported Sampler3D filter mode")
         if not self.wrap_mode & WrapMode.SUPPORTED_3D:
             raise Exception("Unsupported Sampler3D wrap mode")
-
     @ti.func
-    def sample(self, im:ti.template(), uvw:tm.vec3) -> ti.template():
-        tex = im[0, 0, 0]
+    def sample(self, tex:ti.template(), uvw:tm.vec3) -> ti.template():
+        """
+        Sample texture at uv coordinates.
+        
+        :param tex: Texture to sample.
+        :type tex: Texture3D
+        :param uvw: UVW coordinates.
+        :type uvw: taichi.math.vec3
+        :return: Filtered sampled texel.
+        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+        """
+        tex = tex[0, 0, 0]
         if self.filter_mode == FilterMode.TRILINEAR:
             if self.wrap_mode == WrapMode.CLAMP:
-                tex = sample_nn_3d_clamp(im, uvw, self.repeat_w, self.repeat_h, self.repeat_d)
+                tex = sample_nn_3d_clamp(tex, uvw, self.repeat_w, self.repeat_h, self.repeat_d)
             elif self.wrap_mode == WrapMode.REPEAT:
-                tex = sample_nn_3d_repeat(im, uvw, self.repeat_w, self.repeat_h, self.repeat_d)
+                tex = sample_nn_3d_repeat(tex, uvw, self.repeat_w, self.repeat_h, self.repeat_d)
         elif self.filter_mode == FilterMode.NEAREST:
             if self.wrap_mode == WrapMode.CLAMP:
-                tex = sample_trilinear_clamp(im, uvw, self.repeat_w, self.repeat_h, self.repeat_d)
+                tex = sample_trilinear_clamp(tex, uvw, self.repeat_w, self.repeat_h, self.repeat_d)
             if self.wrap_mode == WrapMode.REPEAT:
-                tex = sample_trilinear_repeat(im, uvw, self.repeat_w, self.repeat_h, self.repeat_d)
+                tex = sample_trilinear_repeat(tex, uvw, self.repeat_w, self.repeat_h, self.repeat_d)
         else:
             tex *= 0. # shouldn't occur; blank it so we're more likely to notice
 
@@ -191,9 +209,9 @@ class Sampler3D:
         """Fetch texel at indexed xy location.
         
         :param tex: Texture to sample.
-        :type tex: Texture2D
-        :param xy: xy index.
-        :type xy: taichi.math.ivec2
+        :type tex: Texture3D
+        :param xyz: xyz index.
+        :type xyz: taichi.math.ivec3
         :return: Sampled texel.
         :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
         """

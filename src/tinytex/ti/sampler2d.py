@@ -22,6 +22,419 @@ import numpy as np
 from .params import *
 from .splines import *
 
+
+@ti.data_oriented
+class Sampler2D:
+    """
+    Taichi 2D texture sampler.
+
+    :param repeat_w: Number of times to repeat image width/x.
+    :param repeat_h: Number of times to repeat image height/y.
+    :param filter_mode: Filter mode.
+    :param wrap_mode: Wrap mode.
+    """
+    def __init__(self, 
+        repeat_w:int=1, 
+        repeat_h:int=1, 
+        filter_mode:Union[FilterMode, str]=FilterMode.BILINEAR, 
+        wrap_mode:Union[WrapMode, str]=WrapMode.REPEAT
+        ):
+        self.repeat_w = repeat_w
+        self.repeat_h = repeat_h
+        self.filter_mode = int(filter_mode) if isinstance(filter_mode, FilterMode) else FilterMode[filter_mode.strip().upper()]
+        self.wrap_mode = int(wrap_mode) if isinstance(wrap_mode, WrapMode) else WrapMode[wrap_mode.strip().upper()]
+
+        # a few reasons to abort
+        if not (self.filter_mode & FilterMode.SUPPORTED_2D):
+            raise Exception("Unsupported Texture2D filter mode: " + self.filter_mode.name)
+        if not (self.wrap_mode & WrapMode.SUPPORTED_2D):
+            raise Exception("Unsupported Texture2D wrap mode: " + self.wrap_mode.name)
+
+    @ti.func
+    def _get_lod_window(self, tex:ti.template(), lod:float) -> tm.ivec4:
+        ml = int(tm.min(lod, tex.max_mip))
+        window = tm.ivec4(0)
+        window.x = tex.width if ml > 0 else 0
+        window.z = window.x + (tex.width >> ml)
+        window.y = tex.height - (tex.height >> tm.max(ml - 1, 0))
+        window.w = window.y + (tex.height >> ml)
+
+        return window
+
+    @ti.func
+    def _get_lod_windows(self, tex:ti.template(), lod:float) -> (tm.ivec4, tm.ivec4):
+        ml_high = int(tm.min(tm.ceil(lod), tex.max_mip))
+        ml_low = int(tm.min(tm.floor(lod), tex.max_mip))
+        window_high, window_low = tm.ivec4(0), tm.ivec4(0)
+        
+        window_low.x = tex.width if ml_low > 0 else 0
+        window_high.x = tex.width
+
+        window_low.z = window_low.x + (tex.width >> ml_low)
+        window_high.z = window_high.x + (tex.width >> ml_high)
+
+        window_low.y = tex.height - (tex.height >> tm.max(ml_low - 1, 0))
+        window_high.y = tex.height - (tex.height >> (ml_high - 1))
+
+        window_low.w = window_low.y + (tex.height >> ml_low)
+        window_high.w = window_high.y + (tex.height >> ml_high)
+
+        return window_high, window_low
+
+    @ti.func
+    def _sample_window(self, tex:ti.template(), uv:tm.vec2, window:tm.ivec4):
+        if ti.static(tex.channels == 1):
+            if ti.static(self.filter_mode == FilterMode.NEAREST):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_nn_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_nn_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_nn_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_nn_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+            elif ti.static(self.filter_mode == FilterMode.BILINEAR):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_bilinear_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_bilinear_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_bilinear_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_bilinear_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+            elif ti.static(self.filter_mode == FilterMode.B_SPLINE):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_b_spline_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_b_spline_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_b_spline_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_b_spline_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+            elif ti.static(self.filter_mode == FilterMode.HERMITE):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_hermite_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_hermite_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_hermite_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_hermite_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+            elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
+                third = 0.3333333
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+            elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
+                b, c = 0., 0.5
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+        elif ti.static(tex.channels == 2):
+            if ti.static(self.filter_mode == FilterMode.NEAREST):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_nn_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_nn_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_nn_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_nn_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+            elif ti.static(self.filter_mode == FilterMode.BILINEAR):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_bilinear_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_bilinear_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_bilinear_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_bilinear_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+            elif ti.static(self.filter_mode == FilterMode.B_SPLINE):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_b_spline_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_b_spline_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_b_spline_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_b_spline_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+            elif ti.static(self.filter_mode == FilterMode.HERMITE):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_hermite_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_hermite_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_hermite_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_hermite_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+            elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
+                third = 0.3333333
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+            elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
+                b, c = 0., 0.5
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+        elif ti.static(tex.channels == 3):
+            if ti.static(self.filter_mode == FilterMode.NEAREST):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_nn_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_nn_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_nn_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_nn_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+            elif ti.static(self.filter_mode == FilterMode.BILINEAR):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_bilinear_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_bilinear_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_bilinear_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_bilinear_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+            elif ti.static(self.filter_mode == FilterMode.B_SPLINE):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_b_spline_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_b_spline_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_b_spline_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_b_spline_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+            elif ti.static(self.filter_mode == FilterMode.HERMITE):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_hermite_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_hermite_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_hermite_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_hermite_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+            elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
+                third = 0.3333333
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+            elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
+                b, c = 0., 0.5
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+        elif ti.static(tex.channels == 4):
+            if ti.static(self.filter_mode == FilterMode.NEAREST):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_nn_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_nn_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_nn_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_nn_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+            elif ti.static(self.filter_mode == FilterMode.BILINEAR):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_bilinear_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_bilinear_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_bilinear_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_bilinear_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+            elif ti.static(self.filter_mode == FilterMode.B_SPLINE):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_b_spline_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_b_spline_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_b_spline_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_b_spline_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+            elif ti.static(self.filter_mode == FilterMode.HERMITE):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_hermite_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_hermite_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_hermite_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_hermite_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+            elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
+                third = 0.3333333
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+            elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
+                b, c = 0., 0.5
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+
+    @ti.func
+    def sample(self, tex:ti.template(), uv:tm.vec2):
+        """
+        Sample texture at uv coordinates.
+        
+        :param tex: Texture to sample.
+        :type tex: Texture2D
+        :param uv: UV coordinates.
+        :type uv: taichi.math.vec2
+        :return: Filtered sampled texel.
+        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+        """
+        window = tm.ivec4(0, 0, tex.width, tex.height)
+        # "out" variable must be here or things break.
+        # We can't return directly on Linux or taking e.g. `sample(...).rgb` will throw:
+        # Assertion failure: var.cast<IndexExpression>()->is_matrix_field() || var.cast<IndexExpression>()->is_ndarray()
+        # Your guess as to wtf that means is as good as mine.
+        out = self._sample_window(tex, uv, window) 
+        return out 
+
+    @ti.func
+    def sample_lod(self, tex:ti.template(), uv:tm.vec2, lod:float):
+        """
+        Sample texture at uv coordinates at specified mip level.
+
+        :param tex: Texture to sample.
+        :type tex: Texture2D
+        :param uv: UV coordinates.
+        :type uv: taichi.math.vec2
+        :param lod: Level of detail.
+        :type lod: float
+        :return: Filtered sampled texel.
+        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+        """
+        if ti.static(tex.channels == 1):
+            out = 0.
+            if tex.max_mip == 0:
+                out = self.sample(tex, uv)
+            elif lod % 1. == 0.:
+                window = self._get_lod_window(tex, lod)
+                out = self._sample_window(tex, uv, window)
+            else:
+                window_high, window_low = self._get_lod_windows(tex, lod)
+                low = self._sample_window(tex, uv, window_low)
+                high = self._sample_window(tex, uv, window_high)
+                out = tm.mix(low, high, lod % 1.)
+            return out
+        if ti.static(tex.channels == 2):
+            out = tm.vec2(0.)
+            if tex.max_mip == 0:
+                out = self.sample(tex, uv)
+            elif lod % 1. == 0.:
+                window = self._get_lod_window(tex, lod)
+                out = self._sample_window(tex, uv, window)
+            else:
+                window_high, window_low = self._get_lod_windows(tex, lod)
+                low = self._sample_window(tex, uv, window_low)
+                high = self._sample_window(tex, uv, window_high)
+                out = tm.mix(low, high, lod % 1.)
+            return out
+        if ti.static(tex.channels == 3):
+            out = tm.vec3(0.)
+            if tex.max_mip == 0:
+                out = self.sample(tex, uv)
+            elif lod % 1. == 0.:
+                window = self._get_lod_window(tex, lod)
+                out = self._sample_window(tex, uv, window)
+            else:
+                window_high, window_low = self._get_lod_windows(tex, lod)
+                low = self._sample_window(tex, uv, window_low)
+                high = self._sample_window(tex, uv, window_high)
+                out = tm.mix(low, high, lod % 1.)
+            return out
+        if ti.static(tex.channels == 4):
+            out = tm.vec4(0.)
+            if tex.max_mip == 0:
+                out = self.sample(tex, uv)
+            elif lod % 1. == 0.:
+                window = self._get_lod_window(tex, lod)
+                out = self._sample_window(tex, uv, window)
+            else:
+                window_high, window_low = self._get_lod_windows(tex, lod)
+                low = self._sample_window(tex, uv, window_low)
+                high = self._sample_window(tex, uv, window_high)
+                out = tm.mix(low, high, lod % 1.)
+            return out
+
+    @ti.func
+    def _fetch_r(self, tex:ti.template(), xy:tm.ivec2) -> float:
+        return tex.field[xy.y, xy.x]
+
+    @ti.func
+    def _fetch_rg(self, tex:ti.template(), xy:tm.ivec2) -> tm.vec2:
+        return tm.vec2(tex.field[xy.y, xy.x])
+
+    @ti.func
+    def _fetch_rgb(self, tex:ti.template(), xy:tm.ivec2) -> tm.vec3:
+        return tm.vec3(tex.field[xy.y, xy.x])
+
+    @ti.func
+    def _fetch_rgba(self, tex:ti.template(), xy:tm.ivec2) -> tm.vec4:
+        return tm.vec4(tex.field[xy.y, xy.x])
+
+    @ti.func
+    def fetch(self, tex:ti.template(), xy:tm.ivec2):
+        """Fetch texel at indexed xy location.
+        
+        :param tex: Texture to sample.
+        :type tex: Texture2D
+        :param xy: xy index.
+        :type xy: taichi.math.ivec2
+        :return: Sampled texel.
+        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+        """
+        if ti.static(tex.channels == 1):
+            return self._fetch_r(tex, xy)
+        if ti.static(tex.channels == 2):
+            return self._fetch_rg(tex, xy)
+        if ti.static(tex.channels == 3):
+            return self._fetch_rgb(tex, xy)
+        if ti.static(tex.channels == 4):
+            return self._fetch_rgba(tex, xy)
+
 # ------------------------------------------------------
 
 @ti.func
@@ -2506,417 +2919,3 @@ def sample_indexed_bilinear(
         # out = tm.vec4(0.)
         out = tm.mix(q0, q1, dxdy.y)
         return out
-
-
-
-@ti.data_oriented
-class Sampler2D:
-    """
-    Taichi 2D texture sampler.
-
-    :param repeat_w: Number of times to repeat image horizontally.
-    :param repeat_h: Number of times to repeat image vertically.
-    :param filter_mode: Filter mode.
-    :param wrap_mode: Wrap mode.
-    """
-    def __init__(self, 
-        repeat_w:int=1, 
-        repeat_h:int=1, 
-        filter_mode:Union[FilterMode, str]=FilterMode.BILINEAR, 
-        wrap_mode:Union[WrapMode, str]=WrapMode.REPEAT
-        ):
-        self.repeat_w = repeat_w
-        self.repeat_h = repeat_h
-        self.filter_mode = int(filter_mode) if isinstance(filter_mode, FilterMode) else FilterMode[filter_mode.strip().upper()]
-        self.wrap_mode = int(wrap_mode) if isinstance(wrap_mode, WrapMode) else WrapMode[wrap_mode.strip().upper()]
-
-        # a few reasons to abort
-        if not (self.filter_mode & FilterMode.SUPPORTED_2D):
-            raise Exception("Unsupported Texture2D filter mode: " + self.filter_mode.name)
-        if not (self.wrap_mode & WrapMode.SUPPORTED_2D):
-            raise Exception("Unsupported Texture2D wrap mode: " + self.wrap_mode.name)
-
-    @ti.func
-    def _get_lod_window(self, tex:ti.template(), lod:float) -> tm.ivec4:
-        ml = int(tm.min(lod, tex.max_mip))
-        window = tm.ivec4(0)
-        window.x = tex.width if ml > 0 else 0
-        window.z = window.x + (tex.width >> ml)
-        window.y = tex.height - (tex.height >> tm.max(ml - 1, 0))
-        window.w = window.y + (tex.height >> ml)
-
-        return window
-
-    @ti.func
-    def _get_lod_windows(self, tex:ti.template(), lod:float) -> (tm.ivec4, tm.ivec4):
-        ml_high = int(tm.min(tm.ceil(lod), tex.max_mip))
-        ml_low = int(tm.min(tm.floor(lod), tex.max_mip))
-        window_high, window_low = tm.ivec4(0), tm.ivec4(0)
-        
-        window_low.x = tex.width if ml_low > 0 else 0
-        window_high.x = tex.width
-
-        window_low.z = window_low.x + (tex.width >> ml_low)
-        window_high.z = window_high.x + (tex.width >> ml_high)
-
-        window_low.y = tex.height - (tex.height >> tm.max(ml_low - 1, 0))
-        window_high.y = tex.height - (tex.height >> (ml_high - 1))
-
-        window_low.w = window_low.y + (tex.height >> ml_low)
-        window_high.w = window_high.y + (tex.height >> ml_high)
-
-        return window_high, window_low
-
-    @ti.func
-    def _sample_window(self, tex:ti.template(), uv:tm.vec2, window:tm.ivec4):
-        if ti.static(tex.channels == 1):
-            if ti.static(self.filter_mode == FilterMode.NEAREST):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_nn_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_nn_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_nn_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_nn_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
-            elif ti.static(self.filter_mode == FilterMode.BILINEAR):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_bilinear_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_bilinear_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_bilinear_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_bilinear_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
-            elif ti.static(self.filter_mode == FilterMode.B_SPLINE):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_b_spline_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_b_spline_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_b_spline_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_b_spline_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
-            elif ti.static(self.filter_mode == FilterMode.HERMITE):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_hermite_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_hermite_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_hermite_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_hermite_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
-            elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
-                third = 0.3333333
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-            elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
-                b, c = 0., 0.5
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-        elif ti.static(tex.channels == 2):
-            if ti.static(self.filter_mode == FilterMode.NEAREST):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_nn_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_nn_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_nn_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_nn_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
-            elif ti.static(self.filter_mode == FilterMode.BILINEAR):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_bilinear_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_bilinear_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_bilinear_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_bilinear_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
-            elif ti.static(self.filter_mode == FilterMode.B_SPLINE):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_b_spline_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_b_spline_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_b_spline_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_b_spline_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
-            elif ti.static(self.filter_mode == FilterMode.HERMITE):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_hermite_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_hermite_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_hermite_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_hermite_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
-            elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
-                third = 0.3333333
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-            elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
-                b, c = 0., 0.5
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-        elif ti.static(tex.channels == 3):
-            if ti.static(self.filter_mode == FilterMode.NEAREST):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_nn_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_nn_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_nn_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_nn_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
-            elif ti.static(self.filter_mode == FilterMode.BILINEAR):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_bilinear_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_bilinear_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_bilinear_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_bilinear_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
-            elif ti.static(self.filter_mode == FilterMode.B_SPLINE):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_b_spline_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_b_spline_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_b_spline_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_b_spline_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
-            elif ti.static(self.filter_mode == FilterMode.HERMITE):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_hermite_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_hermite_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_hermite_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_hermite_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
-            elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
-                third = 0.3333333
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-            elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
-                b, c = 0., 0.5
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-        elif ti.static(tex.channels == 4):
-            if ti.static(self.filter_mode == FilterMode.NEAREST):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_nn_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_nn_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_nn_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_nn_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
-            elif ti.static(self.filter_mode == FilterMode.BILINEAR):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_bilinear_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_bilinear_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_bilinear_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_bilinear_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
-            elif ti.static(self.filter_mode == FilterMode.B_SPLINE):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_b_spline_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_b_spline_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_b_spline_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_b_spline_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
-            elif ti.static(self.filter_mode == FilterMode.HERMITE):
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_hermite_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_hermite_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_hermite_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_hermite_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
-            elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
-                third = 0.3333333
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
-            elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
-                b, c = 0., 0.5
-                if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
-
-    @ti.func
-    def sample(self, tex:ti.template(), uv:tm.vec2):
-        """
-        Sample texture at uv coordinates.
-        
-        :param tex: Texture to sample.
-        :type tex: Texture2D
-        :param uv: UV coordinates.
-        :type uv: taichi.math.vec2
-        :return: Filtered sampled texel.
-        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
-        """
-        window = tm.ivec4(0, 0, tex.width, tex.height)
-        # "out" variable must be here or things break.
-        # We can't return directly on Linux or taking e.g. `sample(...).rgb` will throw:
-        # Assertion failure: var.cast<IndexExpression>()->is_matrix_field() || var.cast<IndexExpression>()->is_ndarray()
-        # Your guess as to wtf that means is as good as mine.
-        out = self._sample_window(tex, uv, window) 
-        return out 
-
-    @ti.func
-    def sample_lod(self, tex:ti.template(), uv:tm.vec2, lod:float):
-        """
-        Sample texture at uv coordinates at specified mip level.
-
-        :param tex: Texture to sample.
-        :type tex: Texture2D
-        :param uv: UV coordinates.
-        :type uv: taichi.math.vec2
-        :param lod: Level of detail.
-        :type lod: float
-        :return: Filtered sampled texel.
-        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
-        """
-        if ti.static(tex.channels == 1):
-            out = 0.
-            if tex.max_mip == 0:
-                out = self.sample(tex, uv)
-            elif lod % 1. == 0.:
-                window = self._get_lod_window(tex, lod)
-                out = self._sample_window(tex, uv, window)
-            else:
-                window_high, window_low = self._get_lod_windows(tex, lod)
-                low = self._sample_window(tex, uv, window_low)
-                high = self._sample_window(tex, uv, window_high)
-                out = tm.mix(low, high, lod % 1.)
-            return out
-        if ti.static(tex.channels == 2):
-            out = tm.vec2(0.)
-            if tex.max_mip == 0:
-                out = self.sample(tex, uv)
-            elif lod % 1. == 0.:
-                window = self._get_lod_window(tex, lod)
-                out = self._sample_window(tex, uv, window)
-            else:
-                window_high, window_low = self._get_lod_windows(tex, lod)
-                low = self._sample_window(tex, uv, window_low)
-                high = self._sample_window(tex, uv, window_high)
-                out = tm.mix(low, high, lod % 1.)
-            return out
-        if ti.static(tex.channels == 3):
-            out = tm.vec3(0.)
-            if tex.max_mip == 0:
-                out = self.sample(tex, uv)
-            elif lod % 1. == 0.:
-                window = self._get_lod_window(tex, lod)
-                out = self._sample_window(tex, uv, window)
-            else:
-                window_high, window_low = self._get_lod_windows(tex, lod)
-                low = self._sample_window(tex, uv, window_low)
-                high = self._sample_window(tex, uv, window_high)
-                out = tm.mix(low, high, lod % 1.)
-            return out
-        if ti.static(tex.channels == 4):
-            out = tm.vec4(0.)
-            if tex.max_mip == 0:
-                out = self.sample(tex, uv)
-            elif lod % 1. == 0.:
-                window = self._get_lod_window(tex, lod)
-                out = self._sample_window(tex, uv, window)
-            else:
-                window_high, window_low = self._get_lod_windows(tex, lod)
-                low = self._sample_window(tex, uv, window_low)
-                high = self._sample_window(tex, uv, window_high)
-                out = tm.mix(low, high, lod % 1.)
-            return out
-
-    @ti.func
-    def _fetch_r(self, tex:ti.template(), xy:tm.ivec2) -> float:
-        return tex.field[xy.y, xy.x]
-
-    @ti.func
-    def _fetch_rg(self, tex:ti.template(), xy:tm.ivec2) -> tm.vec2:
-        return tm.vec2(tex.field[xy.y, xy.x])
-
-    @ti.func
-    def _fetch_rgb(self, tex:ti.template(), xy:tm.ivec2) -> tm.vec3:
-        return tm.vec3(tex.field[xy.y, xy.x])
-
-    @ti.func
-    def _fetch_rgba(self, tex:ti.template(), xy:tm.ivec2) -> tm.vec4:
-        return tm.vec4(tex.field[xy.y, xy.x])
-
-    @ti.func
-    def fetch(self, tex:ti.template(), xy:tm.ivec2):
-        """Fetch texel at indexed xy location.
-        
-        :param tex: Texture to sample.
-        :type tex: Texture2D
-        :param xy: xy index.
-        :type xy: taichi.math.ivec2
-        :return: Sampled texel.
-        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
-        """
-        if ti.static(tex.channels == 1):
-            return self._fetch_r(tex, xy)
-        if ti.static(tex.channels == 2):
-            return self._fetch_rg(tex, xy)
-        if ti.static(tex.channels == 3):
-            return self._fetch_rgb(tex, xy)
-        if ti.static(tex.channels == 4):
-            return self._fetch_rgba(tex, xy)
