@@ -168,9 +168,6 @@ class Texture2D:
         """Regenerate texture mip chain from level 0 and populate Taichi field."""
         window_last = tm.ivec4(0, 0, self.width, self.height)
         window = tm.ivec4(0)
-        # for _ in range(1):
-        #     for x, y in ti.ndrange(self.width, self.height):
-        #         self.field[window.y+y, window.x+x] = 0.5
         for _ in range(1):
             for ml in range(1, self.max_mip + 1):
                 window.x = self.width 

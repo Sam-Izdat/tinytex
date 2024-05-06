@@ -16,7 +16,7 @@ def compute_cubic_hermite_spline(p, x:float) -> float:
     return p[1] + 0.5 * x*(p[2] - p[0] + x*(2.0*p[0] - 5.0*p[1] + 4.0*p[2] - p[3] + x*(3.0*(p[1] - p[2]) + p[3] - p[0])))
 
 @ti.func
-def compute_b_spline(p:tm.vec4, x:float) -> float:
+def compute_cubic_b_spline(p:tm.vec4, x:float) -> float:
     third = (1./3.)
     sixth = (1./6.)
     x_squared = x**2
@@ -28,7 +28,7 @@ def compute_b_spline(p:tm.vec4, x:float) -> float:
     return out
 
 @ti.func
-def compute_mitchell_netravali_spline(p:tm.vec4, x:float, b:float, c:float) -> float:
+def compute_bc_spline(p:tm.vec4, x:float, b:float, c:float) -> float:
     third = (1./3.)
     sixth = (1./6.)
     B, C = b, c
@@ -41,7 +41,7 @@ def compute_mitchell_netravali_spline(p:tm.vec4, x:float, b:float, c:float) -> f
     return out
 
 @ti.func
-def cubic_hermite(p:tm.mat4, x:float, y:float) -> float:
+def filter_cubic_hermite(p:tm.mat4, x:float, y:float) -> float:
     arr = tm.vec4(0.)
     arr[0] = compute_cubic_hermite_spline(tm.vec4(p[0,:]), y)
     arr[1] = compute_cubic_hermite_spline(tm.vec4(p[1,:]), y)
@@ -50,19 +50,19 @@ def cubic_hermite(p:tm.mat4, x:float, y:float) -> float:
     return compute_cubic_hermite_spline(arr, x)
 
 @ti.func
-def cubic_b_spline(p:tm.mat4, x:float, y:float) -> float:
+def filter_cubic_b_spline(p:tm.mat4, x:float, y:float) -> float:
     arr = tm.vec4(0.)
-    arr[0] = compute_b_spline(tm.vec4(p[0,:]), y)
-    arr[1] = compute_b_spline(tm.vec4(p[1,:]), y)
-    arr[2] = compute_b_spline(tm.vec4(p[2,:]), y)
-    arr[3] = compute_b_spline(tm.vec4(p[3,:]), y)
-    return compute_b_spline(arr, x)
+    arr[0] = compute_cubic_b_spline(tm.vec4(p[0,:]), y)
+    arr[1] = compute_cubic_b_spline(tm.vec4(p[1,:]), y)
+    arr[2] = compute_cubic_b_spline(tm.vec4(p[2,:]), y)
+    arr[3] = compute_cubic_b_spline(tm.vec4(p[3,:]), y)
+    return compute_cubic_b_spline(arr, x)
 
 @ti.func
-def cubic_mitchell_netravali(p:tm.mat4, x:float, y:float, b:float, c:float) -> float:
+def filter_mitchell_netravali(p:tm.mat4, x:float, y:float, b:float, c:float) -> float:
     arr = tm.vec4(0.)
-    arr[0] = compute_mitchell_netravali_spline(tm.vec4(p[0,:]), y, b, c)
-    arr[1] = compute_mitchell_netravali_spline(tm.vec4(p[1,:]), y, b, c)
-    arr[2] = compute_mitchell_netravali_spline(tm.vec4(p[2,:]), y, b, c)
-    arr[3] = compute_mitchell_netravali_spline(tm.vec4(p[3,:]), y, b, c)
-    return compute_mitchell_netravali_spline(arr, x, b, c)
+    arr[0] = compute_bc_spline(tm.vec4(p[0,:]), y, b, c)
+    arr[1] = compute_bc_spline(tm.vec4(p[1,:]), y, b, c)
+    arr[2] = compute_bc_spline(tm.vec4(p[2,:]), y, b, c)
+    arr[3] = compute_bc_spline(tm.vec4(p[3,:]), y, b, c)
+    return compute_bc_spline(arr, x, b, c)
