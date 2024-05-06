@@ -6,6 +6,13 @@ import taichi.math as tm
 
 @ti.func
 def compute_cubic_hermite_spline(p, x:float) -> float:
+    """
+    Compute cubic Hermite spline. Interpolating spline.
+
+    :param p: Four control points of interpolation.
+    :type p: taichi.math.vec4
+    :param x: Spline curve parameter.
+    """
     # # Alternative formulation:
     # x_squared = x**2
     # x_cubed = x**3
@@ -17,6 +24,13 @@ def compute_cubic_hermite_spline(p, x:float) -> float:
 
 @ti.func
 def compute_cubic_b_spline(p:tm.vec4, x:float) -> float:
+    """
+    Compute B-spline. Non-interpolating spline.
+
+    :param p: Four control points of approximation.
+    :type p: taichi.math.vec4
+    :param x: Spline curve parameter.
+    """
     third = (1./3.)
     sixth = (1./6.)
     x_squared = x**2
@@ -29,6 +43,15 @@ def compute_cubic_b_spline(p:tm.vec4, x:float) -> float:
 
 @ti.func
 def compute_bc_spline(p:tm.vec4, x:float, b:float, c:float) -> float:
+    """
+    Compute BC-spline. Non-interpolating spline unless B=0.
+
+    :param p: Four control points of approximation.
+    :type p: taichi.math.vec4
+    :param x: Spline curve parameter.
+    :param b: BC-spline B-value.
+    :param c: BC-spline C-value.
+    """
     third = (1./3.)
     sixth = (1./6.)
     B, C = b, c
@@ -42,6 +65,14 @@ def compute_bc_spline(p:tm.vec4, x:float, b:float, c:float) -> float:
 
 @ti.func
 def filter_cubic_hermite(p:tm.mat4, x:float, y:float) -> float:
+    """
+    Cubic Hermite filter. Interpolates 4x4 point samples.
+    
+    :param p: 4x4 samples of approximation.
+    :type p: taichi.math.vec4
+    :param x: x-delta
+    :param y: y-delta
+    """
     arr = tm.vec4(0.)
     arr[0] = compute_cubic_hermite_spline(tm.vec4(p[0,:]), y)
     arr[1] = compute_cubic_hermite_spline(tm.vec4(p[1,:]), y)
@@ -51,6 +82,14 @@ def filter_cubic_hermite(p:tm.mat4, x:float, y:float) -> float:
 
 @ti.func
 def filter_cubic_b_spline(p:tm.mat4, x:float, y:float) -> float:
+    """
+    Cubic B-spline filter. Approximates 4x4 point samples.
+
+    :param p: 4x4 samples of approximation.
+    :type p: taichi.math.vec4
+    :param x: x-delta
+    :param y: y-delta
+    """
     arr = tm.vec4(0.)
     arr[0] = compute_cubic_b_spline(tm.vec4(p[0,:]), y)
     arr[1] = compute_cubic_b_spline(tm.vec4(p[1,:]), y)
@@ -60,6 +99,16 @@ def filter_cubic_b_spline(p:tm.mat4, x:float, y:float) -> float:
 
 @ti.func
 def filter_mitchell_netravali(p:tm.mat4, x:float, y:float, b:float, c:float) -> float:
+    """
+    Mitchell-Netravali/BC-spline filter. Approximates/interpolates 4x4 point samples.
+
+    :param p: 4x4 samples of approximation.
+    :type p: taichi.math.vec4
+    :param x: x-delta
+    :param y: y-delta
+    :param b: BC-spline B-value.
+    :param c: BC-spline C-value.
+    """
     arr = tm.vec4(0.)
     arr[0] = compute_bc_spline(tm.vec4(p[0,:]), y, b, c)
     arr[1] = compute_bc_spline(tm.vec4(p[1,:]), y, b, c)
