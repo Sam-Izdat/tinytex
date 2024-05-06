@@ -155,9 +155,9 @@ class Sampler3D:
         self.repeat_d = repeat_d
         self.filter_mode = int(filter_mode) if isinstance(filter_mode, FilterMode) else FilterMode[filter_mode.strip().upper()]
         self.wrap_mode = int(wrap_mode) if isinstance(wrap_mode, WrapMode) else WrapMode[wrap_mode.strip().upper()]
-        if not self.filter_mode & FilterMode.SUPPORTED_3D:
+        if not (self.filter_mode & FilterMode.SUPPORTED_3D):
             raise Exception("Unsupported Sampler3D filter mode")
-        if not self.wrap_mode & WrapMode.SUPPORTED_3D:
+        if not (self.wrap_mode & WrapMode.SUPPORTED_3D):
             raise Exception("Unsupported Sampler3D wrap mode")
     @ti.func
     def sample(self, tex:ti.template(), uvw:tm.vec3) -> ti.template():
@@ -172,15 +172,15 @@ class Sampler3D:
         :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
         """
         tex = tex[0, 0, 0]
-        if self.filter_mode == FilterMode.TRILINEAR:
-            if self.wrap_mode == WrapMode.CLAMP:
+        if ti.static(self.filter_mode == FilterMode.TRILINEAR):
+            if ti.static(self.wrap_mode == WrapMode.CLAMP):
                 tex = sample_nn_3d_clamp(tex, uvw, self.repeat_w, self.repeat_h, self.repeat_d)
-            elif self.wrap_mode == WrapMode.REPEAT:
+            elif ti.static(self.wrap_mode == WrapMode.REPEAT):
                 tex = sample_nn_3d_repeat(tex, uvw, self.repeat_w, self.repeat_h, self.repeat_d)
-        elif self.filter_mode == FilterMode.NEAREST:
-            if self.wrap_mode == WrapMode.CLAMP:
+        elif ti.static(self.filter_mode == FilterMode.NEAREST):
+            if ti.static(self.wrap_mode == WrapMode.CLAMP):
                 tex = sample_trilinear_clamp(tex, uvw, self.repeat_w, self.repeat_h, self.repeat_d)
-            if self.wrap_mode == WrapMode.REPEAT:
+            elif ti.static(self.wrap_mode == WrapMode.REPEAT):
                 tex = sample_trilinear_repeat(tex, uvw, self.repeat_w, self.repeat_h, self.repeat_d)
         else:
             tex *= 0. # shouldn't occur; blank it so we're more likely to notice

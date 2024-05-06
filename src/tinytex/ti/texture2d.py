@@ -76,7 +76,7 @@ class Texture2D:
         self.fb.dense(ti.ij, (FH, FW)).place(self.field)
         self.fb_snode_tree = self.fb.finalize()
         if torch.is_tensor(im): 
-            self.__populateprepared(im)
+            self.__populate_prepared(im)
 
     def destroy(self):
         """
@@ -131,9 +131,9 @@ class Texture2D:
             #     HO += NH
 
             im = tmp.permute(1, 2, 0) 
-        self.__populateprepared(im.float()) 
+        self.__populate_prepared(im.float()) 
 
-    def __populateprepared(self, im:torch.Tensor):
+    def __populate_prepared(self, im:torch.Tensor):
         if im.size(2) == 1: im = im.squeeze(-1)
         self.field.from_torch(im.float()) 
         if self.generate_mips: self.regenerate_mips()
