@@ -11,9 +11,9 @@ from enum import IntEnum
 from .prep import *
 
 @ti.data_oriented
-class Texture3D:
+class Texture1D:
     """
-    3D read-write texture. Can be initialized with either texture shape or texture data.
+    1D read-write texture. Can be initialized with either texture shape or texture data.
     """
     def __init__():
         pass

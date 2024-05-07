@@ -9,8 +9,199 @@ import numpy as np
 
 from .params import *
 
+@ti.data_oriented
+class Sampler3D:
+    """
+    3D texture sampler.
+
+    :param repeat_u: Number of times to tile u/width.
+    :param repeat_v: Number of times to tile v/height.
+    :param repeat_w: Number of times to tile w/depth.
+    :param filter_mode: Filter mode.
+    :param wrap_mode: Wrap mode.
+    """
+    def __init__(self, 
+        repeat_u:int=1, 
+        repeat_v:int=1, 
+        repeat_w:int=1, 
+        filter_mode:Union[FilterMode, str]=FilterMode.TRILINEAR, 
+        wrap_mode:Union[WrapMode, str]=WrapMode.REPEAT):
+        self.repeat_u = repeat_u
+        self.repeat_v = repeat_v
+        self.repeat_w = repeat_w
+        self.filter_mode = int(filter_mode) if isinstance(filter_mode, FilterMode) else FilterMode[filter_mode.strip().upper()]
+        self.wrap_mode = int(wrap_mode) if isinstance(wrap_mode, WrapMode) else WrapMode[wrap_mode.strip().upper()]
+        if not (self.filter_mode & FilterMode.SUPPORTED_3D):
+            raise Exception("Unsupported Sampler3D filter mode")
+        if not (self.wrap_mode & WrapMode.SUPPORTED_3D):
+            raise Exception("Unsupported Sampler3D wrap mode")
+
+    @ti.func
+    def sample(self, tex:ti.template(), uvw:tm.vec3) -> ti.template():
+        """
+        Sample texture at uv coordinates.
+        
+        :param tex: Texture to sample.
+        :type tex: Texture3D
+        :param uvw: UVW coordinates.
+        :type uvw: taichi.math.vec3
+        :return: Filtered sampled texel.
+        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+        """
+        tex = tex[0, 0, 0]
+
+        if ti.static(tex.channels == 1):
+            if ti.static(self.filter_mode == FilterMode.NEAREST):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_3d_nn_r_repeat(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_3d_nn_r_clamp(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_3d_nn_r_repeat_x(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_3d_nn_r_repeat_y(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Z):
+                    return sample_3d_nn_r_repeat_z(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+            elif ti.static(self.filter_mode == FilterMode.TRILINEAR):
+                if ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    tex = sample_3d_trilinear_r_clamp(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    tex = sample_3d_trilinear_r_repeat(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    tex = sample_3d_trilinear_r_repeat_x(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    tex = sample_3d_trilinear_r_repeat_y(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Z):
+                    tex = sample_3d_trilinear_r_repeat_z(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+
+        elif ti.static(tex.channels == 2):
+            if ti.static(self.filter_mode == FilterMode.NEAREST):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_3d_nn_rg_repeat(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_3d_nn_rg_clamp(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_3d_nn_rg_repeat_x(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_3d_nn_rg_repeat_y(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Z):
+                    return sample_3d_nn_rg_repeat_z(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+            elif ti.static(self.filter_mode == FilterMode.TRILINEAR):
+                if ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    tex = sample_3d_trilinear_rg_clamp(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    tex = sample_3d_trilinear_rg_repeat(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    tex = sample_3d_trilinear_rg_repeat_x(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    tex = sample_3d_trilinear_rg_repeat_y(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Z):
+                    tex = sample_3d_trilinear_rg_repeat_z(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+
+        elif ti.static(tex.channels == 3):
+            if ti.static(self.filter_mode == FilterMode.NEAREST):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_3d_nn_rgb_repeat(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_3d_nn_rgb_clamp(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_3d_nn_rgb_repeat_x(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_3d_nn_rgb_repeat_y(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Z):
+                    return sample_3d_nn_rgb_repeat_z(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+            elif ti.static(self.filter_mode == FilterMode.TRILINEAR):
+                if ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    tex = sample_3d_trilinear_rgb_clamp(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    tex = sample_3d_trilinear_rgb_repeat(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    tex = sample_3d_trilinear_rgb_repeat_x(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    tex = sample_3d_trilinear_rgb_repeat_y(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Z):
+                    tex = sample_3d_trilinear_rgb_repeat_z(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+
+        elif ti.static(tex.channels == 4):
+            if ti.static(self.filter_mode == FilterMode.NEAREST):
+                if ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    return sample_3d_nn_rgba_repeat(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    return sample_3d_nn_rgba_clamp(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    return sample_3d_nn_rgba_repeat_x(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    return sample_3d_nn_rgba_repeat_y(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Z):
+                    return sample_3d_nn_rgba_repeat_z(tex.field, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+            elif ti.static(self.filter_mode == FilterMode.TRILINEAR):
+                if ti.static(self.wrap_mode == WrapMode.CLAMP):
+                    tex = sample_3d_trilinear_rgba_clamp(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT):
+                    tex = sample_3d_trilinear_rgba_repeat(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
+                    tex = sample_3d_trilinear_rgba_repeat_x(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
+                    tex = sample_3d_trilinear_rgba_repeat_y(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+                elif ti.static(self.wrap_mode == WrapMode.REPEAT_Z):
+                    tex = sample_3d_trilinear_rgba_repeat_z(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
+
+        else:
+            tex *= 0. # shouldn't occur; blank it so we're more likely to notice
+
+        return tex
+
+
+    @ti.func
+    def _fetch_r(self, tex:ti.template(), xyz:tm.ivec3) -> float:
+        return tex.field[xyz.x, xyz.y, xyz.z]
+
+    @ti.func
+    def _fetch_rg(self, tex:ti.template(), xyz:tm.ivec3) -> tm.vec2:
+        return tm.vec2(tex.field[xyz.x, xyz.y, xyz.z])
+
+    @ti.func
+    def _fetch_rgb(self, tex:ti.template(), xyz:tm.ivec3) -> tm.vec3:
+        return tm.vec3(tex.field[xyz.x, xyz.y, xyz.z])
+
+    @ti.func
+    def _fetch_rgba(self, tex:ti.template(), xyz:tm.ivec3) -> tm.vec4:
+        return tm.vec4(tex.field[xyz.x, xyz.y, xyz.z])
+
+    @ti.func
+    def fetch(self, tex:ti.template(), xyz:tm.ivec3):
+        """Fetch texel at indexed xy location.
+        
+        :param tex: Texture to sample.
+        :type tex: Texture3D
+        :param xyz: xyz index.
+        :type xyz: taichi.math.ivec3
+        :return: Sampled texel.
+        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+        """
+        if ti.static(tex.channels == 1):
+            return self._fetch_r(tex, xyz)
+        if ti.static(tex.channels == 2):
+            return self._fetch_rg(tex, xyz)
+        if ti.static(tex.channels == 3):
+            return self._fetch_rgb(tex, xyz)
+        if ti.static(tex.channels == 4):
+            return self._fetch_rgba(tex, xyz)
+
 @ti.func
-def sample_trilinear_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+def sample_3d_trilinear_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+    """
+    Sample 3D field with trilinear sampling. All axes clamped.
+    
+    :param tex: 3D texture field.
+    :type tex: taichi.field
+    :param uvw: UVW coordinates.
+    :type uvw: taichi.math.vec3
+    :param repeat_u: Number of times to tile u/width.
+    :param repeat_v: Number of times to tile v/height.
+    :param repeat_w: Number of times to tile w/depth.    
+    :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+    """
     tex = tex[0, 0, 0]
     width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
     eps = 1e-7
@@ -59,7 +250,19 @@ def sample_trilinear_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_
 
 
 @ti.func
-def sample_trilinear_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+def sample_3d_trilinear_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+    """
+    Sample 3D field with trilinear sampling. All axes repeated.
+    
+    :param tex: 3D texture field.
+    :type tex: taichi.field
+    :param uvw: UVW coordinates.
+    :type uvw: taichi.math.vec3
+    :param repeat_u: Number of times to tile u/width.
+    :param repeat_v: Number of times to tile v/height.
+    :param repeat_w: Number of times to tile w/depth.    
+    :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+    """
     tex = tex[0, 0, 0]
     width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
 
@@ -102,7 +305,19 @@ def sample_trilinear_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat
     return tex
 
 @ti.func
-def sample_trilinear_repeat_x(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+def sample_3d_trilinear_repeat_x(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+    """
+    Sample 3D field with trilinear sampling. X-axis repeating, Y and Z clamped.
+    
+    :param tex: 3D texture field.
+    :type tex: taichi.field
+    :param uvw: UVW coordinates.
+    :type uvw: taichi.math.vec3
+    :param repeat_u: Number of times to tile u/width.
+    :param repeat_v: Number of times to tile v/height.
+    :param repeat_w: Number of times to tile w/depth.    
+    :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+    """
     tex = tex[0, 0, 0]
     width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
 
@@ -148,7 +363,19 @@ def sample_trilinear_repeat_x(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repe
     return tex
 
 @ti.func
-def sample_trilinear_repeat_y(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+def sample_3d_trilinear_repeat_y(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+    """
+    Sample 3D field with trilinear sampling. Y-axis repeating, X and Z clamped.
+    
+    :param tex: 3D texture field.
+    :type tex: taichi.field
+    :param uvw: UVW coordinates.
+    :type uvw: taichi.math.vec3
+    :param repeat_u: Number of times to tile u/width.
+    :param repeat_v: Number of times to tile v/height.
+    :param repeat_w: Number of times to tile w/depth.    
+    :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+    """
     tex = tex[0, 0, 0]
     width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
 
@@ -194,7 +421,19 @@ def sample_trilinear_repeat_y(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repe
     return tex
 
 @ti.func
-def sample_trilinear_repeat_z(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+def sample_3d_trilinear_repeat_z(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+    """
+    Sample 3D field with trilinear sampling. Z-axis repeating, X and Y clamped.
+    
+    :param tex: 3D texture field.
+    :type tex: taichi.field
+    :param uvw: UVW coordinates.
+    :type uvw: taichi.math.vec3
+    :param repeat_u: Number of times to tile u/width.
+    :param repeat_v: Number of times to tile v/height.
+    :param repeat_w: Number of times to tile w/depth.    
+    :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+    """
     tex = tex[0, 0, 0]
     width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
 
@@ -240,124 +479,365 @@ def sample_trilinear_repeat_z(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repe
     return tex
 
 
+# previously - ti.real_func
 @ti.func
-def sample_nn_3d_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+def sample_3d_trilinear_r_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> float:
+    return sample_3d_trilinear_repeat(tex, uvw, repeat_u, repeat_v, repeat_w)
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_r_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> float:
+    return sample_3d_trilinear_clamp(tex, uvw, repeat_u, repeat_v, repeat_w)
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_r_repeat_x(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> float:
+    return sample_3d_trilinear_repeat_x(tex, uvw, repeat_u, repeat_v, repeat_w)
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_r_repeat_y(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> float:
+    return sample_3d_trilinear_repeat_y(tex, uvw, repeat_u, repeat_v, repeat_w)
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_r_repeat_z(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> float:
+    return sample_3d_trilinear_repeat_z(tex, uvw, repeat_u, repeat_v, repeat_w)
+
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rg_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec2:
+    return tm.vec2(sample_3d_trilinear_repeat(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rg_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec2:
+    return tm.vec2(sample_3d_trilinear_clamp(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rg_repeat_x(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec2:
+    return tm.vec2(sample_3d_trilinear_repeat_x(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rg_repeat_y(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec2:
+    return tm.vec2(sample_3d_trilinear_repeat_y(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rg_repeat_z(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec2:
+    return tm.vec2(sample_3d_trilinear_repeat_z(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rgb_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec3:
+    return tm.vec3(sample_3d_trilinear_repeat(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rgb_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec3:
+    return tm.vec3(sample_3d_trilinear_clamp(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rgb_repeat_x(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec3:
+    return tm.vec3(sample_3d_trilinear_repeat_x(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rgb_repeat_y(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec3:
+    return tm.vec3(sample_3d_trilinear_repeat_y(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rgb_repeat_z(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec3:
+    return tm.vec3(sample_3d_trilinear_repeat_z(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rgba_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec4:
+    return tm.vec4(sample_3d_trilinear_repeat(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rgba_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec4:
+    return tm.vec4(sample_3d_trilinear_clamp(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rgba_repeat_x(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec4:
+    return tm.vec4(sample_3d_trilinear_repeat_x(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rgba_repeat_y(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec4:
+    return tm.vec4(sample_3d_trilinear_repeat_y(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_trilinear_rgba_repeat_z(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> tm.vec4:
+    return tm.vec4(sample_3d_trilinear_repeat_z(tex, uvw, repeat_u, repeat_v, repeat_w))
+
+
+
+@ti.func
+def sample_3d_nn_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+    """
+    Sample 3D field with point sampling. All axes repeating.
+    
+    :param tex: 3D texture field.
+    :type tex: taichi.field
+    :param uvw: UVW coordinates.
+    :type uvw: taichi.math.vec3
+    :param repeat_u: Number of times to tile u/width.
+    :param repeat_v: Number of times to tile v/height.
+    :param repeat_w: Number of times to tile w/depth.    
+    :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+    """
     tex = tex[0, 0, 0]
     width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
     if width > 1 or height > 1 or depth > 1:
         x, y, z = 0, 0, 0
-        uvw = uvw % 1.
+        uvwb = uvw % 1.
 
-        x = int((uvw.x * float(width * repeat_u)) % width)
-        y = int((uvw.y * float(height * repeat_v)) % height)
-        z = int((uvw.z * float(depth * repeat_w)) % depth)
+        x = int((uvwb.x * float(width * repeat_u)) % width)
+        y = int((uvwb.y * float(height * repeat_v)) % height)
+        z = int((uvwb.z * float(depth * repeat_w)) % depth)
 
         tex = tex[x, y, z]
     return tex
 
 @ti.func
-def sample_nn_3d_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+def sample_3d_nn_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+    """
+    Sample 3D field with point sampling. All axes clamped.
+    
+    :param tex: 3D texture field.
+    :type tex: taichi.field
+    :param uvw: UVW coordinates.
+    :type uvw: taichi.math.vec3
+    :param repeat_u: Number of times to tile u/width.
+    :param repeat_v: Number of times to tile v/height.
+    :param repeat_w: Number of times to tile w/depth.    
+    :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+    """
     tex = tex[0, 0, 0]
     eps = 1e-7
     width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
     if width > 1 or height > 1 or depth > 1:
         x, y, z = 0, 0, 0
-        uvw = tm.clamp(uvw, 0., 1.-eps)
+        uvwb = tm.clamp(uvw, 0., 1.-eps)
 
-        x = int((uvw.x * float(width * repeat_u)) % width)
-        y = int((uvw.y * float(height * repeat_v)) % height)
-        z = int((uvw.z * float(depth * repeat_w)) % depth)
+        x = int((uvwb.x * float(width * repeat_u)) % width)
+        y = int((uvwb.y * float(height * repeat_v)) % height)
+        z = int((uvwb.z * float(depth * repeat_w)) % depth)
 
         tex = tex[x, y, z]
     return tex
 
-@ti.data_oriented
-class Sampler3D:
+
+@ti.func
+def sample_3d_nn_repeat_x(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
     """
-    Taichi 3D texture sampler.
-
-    :param repeat_u: Number of times to repeat image u//width/x.
-    :param repeat_v: Number of times to repeat image v/height/y.
-    :param repeat_w: Number of times to repeat image w/depth/z.
-    :param filter_mode: Filter mode.
-    :param wrap_mode: Wrap mode.
+    Sample 3D field with point sampling. All axes repeating.
+    
+    :param tex: 3D texture field.
+    :type tex: taichi.field
+    :param uvw: UVW coordinates.
+    :type uvw: taichi.math.vec3
+    :param repeat_u: Number of times to tile u/width.
+    :param repeat_v: Number of times to tile v/height.
+    :param repeat_w: Number of times to tile w/depth.    
+    :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
     """
-    def __init__(self, 
-        repeat_u:int=1, 
-        repeat_v:int=1, 
-        repeat_w:int=1, 
-        filter_mode:Union[FilterMode, str]=FilterMode.TRILINEAR, 
-        wrap_mode:Union[WrapMode, str]=WrapMode.REPEAT):
-        self.repeat_u = repeat_u
-        self.repeat_v = repeat_v
-        self.repeat_w = repeat_w
-        self.filter_mode = int(filter_mode) if isinstance(filter_mode, FilterMode) else FilterMode[filter_mode.strip().upper()]
-        self.wrap_mode = int(wrap_mode) if isinstance(wrap_mode, WrapMode) else WrapMode[wrap_mode.strip().upper()]
-        if not (self.filter_mode & FilterMode.SUPPORTED_3D):
-            raise Exception("Unsupported Sampler3D filter mode")
-        if not (self.wrap_mode & WrapMode.SUPPORTED_3D):
-            raise Exception("Unsupported Sampler3D wrap mode")
-    @ti.func
-    def sample(self, tex:ti.template(), uvw:tm.vec3) -> ti.template():
-        """
-        Sample texture at uv coordinates.
-        
-        :param tex: Texture to sample.
-        :type tex: Texture3D
-        :param uvw: UVW coordinates.
-        :type uvw: taichi.math.vec3
-        :return: Filtered sampled texel.
-        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
-        """
-        tex = tex[0, 0, 0]
-        if ti.static(self.filter_mode == FilterMode.TRILINEAR):
-            if ti.static(self.wrap_mode == WrapMode.CLAMP):
-                tex = sample_nn_3d_clamp(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
-            elif ti.static(self.wrap_mode == WrapMode.REPEAT):
-                tex = sample_nn_3d_repeat(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
-        elif ti.static(self.filter_mode == FilterMode.NEAREST):
-            if ti.static(self.wrap_mode == WrapMode.CLAMP):
-                tex = sample_trilinear_clamp(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
-            elif ti.static(self.wrap_mode == WrapMode.REPEAT):
-                tex = sample_trilinear_repeat(tex, uvw, self.repeat_u, self.repeat_v, self.repeat_w)
-        else:
-            tex *= 0. # shouldn't occur; blank it so we're more likely to notice
+    tex = tex[0, 0, 0]
+    eps = 1e-7
+    width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
+    if width > 1 or height > 1 or depth > 1:
+        x, y, z = 0, 0, 0
 
-        return tex
+        uvwb = tm.vec3(0.)
+        uvwb.x = uvw.x % 1.
+        uvwb.y = tm.clamp(uvw.y, 0., 1.-eps)
+        uvwb.z = tm.clamp(uvw.z, 0., 1.-eps)
+
+        x = int((uvwb.x * float(width * repeat_u)) % width)
+        y = int((uvwb.y * float(height * repeat_v)) % height)
+        z = int((uvwb.z * float(depth * repeat_w)) % depth)
+
+        tex = tex[x, y, z]
+    return tex
+
+@ti.func
+def sample_3d_nn_repeat_y(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+    """
+    Sample 3D field with point sampling. All axes repeating.
+    
+    :param tex: 3D texture field.
+    :type tex: taichi.field
+    :param uvw: UVW coordinates.
+    :type uvw: taichi.math.vec3
+    :param repeat_u: Number of times to tile u/width.
+    :param repeat_v: Number of times to tile v/height.
+    :param repeat_w: Number of times to tile w/depth.    
+    :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+    """
+    tex = tex[0, 0, 0]
+    eps = 1e-7
+    width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
+    if width > 1 or height > 1 or depth > 1:
+        x, y, z = 0, 0, 0
+
+        uvwb = tm.vec3(0.)
+        uvwb.x = tm.clamp(uvw.x, 0., 1.-eps)
+        uvwb.y = uvw.y % 1.
+        uvwb.z = tm.clamp(uvw.z, 0., 1.-eps)
+
+        x = int((uvwb.x * float(width * repeat_u)) % width)
+        y = int((uvwb.y * float(height * repeat_v)) % height)
+        z = int((uvwb.z * float(depth * repeat_w)) % depth)
+
+        tex = tex[x, y, z]
+    return tex
+
+@ti.func
+def sample_3d_nn_repeat_z(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int, repeat_w:int) -> ti.template():
+    """
+    Sample 3D field with point sampling. All axes repeating.
+
+    :param tex: 3D texture field.
+    :type tex: taichi.field
+    :param uvw: UVW coordinates.
+    :type uvw: taichi.math.vec3
+    :param repeat_u: Number of times to tile u/width.
+    :param repeat_v: Number of times to tile v/height.
+    :param repeat_w: Number of times to tile w/depth.
+    :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
+    """
+    tex = tex[0, 0, 0]
+    eps = 1e-7
+    width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
+    if width > 1 or height > 1 or depth > 1:
+        x, y, z = 0, 0, 0
+
+        uvwb = tm.vec3(0.)
+        uvwb.x = tm.clamp(uvw.x, 0., 1.-eps)
+        uvwb.y = tm.clamp(uvw.y, 0., 1.-eps)
+        uvwb.z = uvw.z % 1.
+
+        x = int((uvwb.x * float(width * repeat_u)) % width)
+        y = int((uvwb.y * float(height * repeat_v)) % height)
+        z = int((uvwb.z * float(depth * repeat_w)) % depth)
+
+        tex = tex[x, y, z]
+    return tex
 
 
-    @ti.func
-    def _fetch_r(self, tex:ti.template(), xyz:tm.ivec3) -> float:
-        return tex.field[xyz.x, xyz.y, xyz.z]
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_r_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> float:
+    return sample_3d_nn_repeat(tex, uv, repeat_u, repeat_v, repeat_w)
 
-    @ti.func
-    def _fetch_rg(self, tex:ti.template(), xyz:tm.ivec3) -> tm.vec2:
-        return tm.vec2(tex.field[xyz.x, xyz.y, xyz.z])
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_r_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> float:
+    return sample_3d_nn_clamp(tex, uv, repeat_u, repeat_v, repeat_w)
 
-    @ti.func
-    def _fetch_rgb(self, tex:ti.template(), xyz:tm.ivec3) -> tm.vec3:
-        return tm.vec3(tex.field[xyz.x, xyz.y, xyz.z])
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_r_repeat_x(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> float:
+    return sample_3d_nn_repeat_x(tex, uv, repeat_u, repeat_v, repeat_w)
 
-    @ti.func
-    def _fetch_rgba(self, tex:ti.template(), xyz:tm.ivec3) -> tm.vec4:
-        return tm.vec4(tex.field[xyz.x, xyz.y, xyz.z])
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_r_repeat_y(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> float:
+    return sample_3d_nn_repeat_y(tex, uv, repeat_u, repeat_v, repeat_w)
 
-    @ti.func
-    def fetch(self, tex:ti.template(), xyz:tm.ivec3):
-        """Fetch texel at indexed xy location.
-        
-        :param tex: Texture to sample.
-        :type tex: Texture3D
-        :param xyz: xyz index.
-        :type xyz: taichi.math.ivec3
-        :return: Sampled texel.
-        :rtype: float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
-        """
-        if ti.static(tex.channels == 1):
-            return self._fetch_r(tex, xyz)
-        if ti.static(tex.channels == 2):
-            return self._fetch_rg(tex, xyz)
-        if ti.static(tex.channels == 3):
-            return self._fetch_rgb(tex, xyz)
-        if ti.static(tex.channels == 4):
-            return self._fetch_rgba(tex, xyz)
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_r_repeat_z(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> float:
+    return sample_3d_nn_repeat_z(tex, uv, repeat_u, repeat_v, repeat_w)
+
+
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rg_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec2:
+    return tm.vec2(sample_3d_nn_repeat(tex, uv, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rg_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec2:
+    return tm.vec2(sample_3d_nn_clamp(tex, uv, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rg_repeat_x(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec2:
+    return tm.vec2(sample_3d_nn_repeat_x(tex, uv, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rg_repeat_y(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec2:
+    return tm.vec2(sample_3d_nn_repeat_y(tex, uv, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rg_repeat_z(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec2:
+    return tm.vec2(sample_3d_nn_repeat_z(tex, uv, repeat_u, repeat_v, repeat_w))
+
+
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rgb_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec3:
+    return tm.vec3(sample_3d_nn_repeat(tex, uv, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rgb_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec3:
+    return tm.vec3(sample_3d_nn_clamp(tex, uv, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rgb_repeat_x(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec3:
+    return tm.vec3(sample_3d_nn_repeat_x(tex, uv, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rgb_repeat_y(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec3:
+    return tm.vec3(sample_3d_nn_repeat_y(tex, uv, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rgb_repeat_z(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec3:
+    return tm.vec3(sample_3d_nn_repeat_z(tex, uv, repeat_u, repeat_v, repeat_w))
+
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rgba_repeat(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec4:
+    return tm.vec4(sample_3d_nn_repeat(tex, uv, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rgba_clamp(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec4:
+    return tm.vec4(sample_3d_nn_clamp(tex, uv, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rgba_repeat_x(tex:ti.template(), uvw:tm.vec3, repeat_u:int, repeat_v:int,  repeat_w:int) -> tm.vec4:
+    return tm.vec4(sample_3d_nn_repeat_x(tex, uv, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_3d_nn_repeat_y(tex, uv, repeat_u, repeat_v, repeat_w))
+
+# previously - ti.real_func
+@ti.func
+def sample_3d_nn_rgba_repeat_z(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_3d_nn_repeat_z(tex, uv, repeat_u, repeat_v, repeat_w))

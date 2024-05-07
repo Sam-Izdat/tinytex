@@ -3,23 +3,41 @@ tinytex
 
 Python texture sampling, processing and synthesis library for PyTorch-involved projects.
 
-This library is a hodgepodge of tangentially-related procedures useful for sampling, reinterpreting, 
-creating and modifying various kinds of textures. It can be used to:
+This library is a hodgepodge of tangentially-related procedures useful for sampling, making and 
+modifying various kinds of textures. The primary input and output is PyTorch tensors. It provides:
 
-- sample 2D and 3D textures with Taichi (if installed with Taichi optional requirement)
-- resample/rescale, crop and pad images
-- create texture atlases and sample images from texture atlases
-- split images into tiles and merge tiles
-- seamlessly stitch textures with color or vector data for mutual tiling or self-tiling
-- compute and render 2D signed distance fields
-- compute and approximate surface geometry (normals/displacement/curvature)
-- approximate ambient occlusion and bent normals
-- blend normal maps
-- generate tiling noise
-- generate tiling masks from texture atlases
-- transform images to and from log-polar coordinate space
-- transform 1D and 2D images to and from Haar wavelet coefficients
-- compute chromatic point spread functions and approximate aperture diffraction
+- backend-agnostic 1D/2D/3D textures for Taichi (if installed with Taichi optional requirement)
+    
+  - load from and save to the filesystem
+  - convert textures to and from PyTorch tensors
+  - sample textures with lower or higher-order interpolation/approximation
+
+- resampling/rescaling, cropping and padding
+- tiling
+
+  - split images into tiles 
+  - merge tiles back into images
+  - seamlessly stitch textures with color or vector data for mutual tiling or self-tiling
+
+- texture atlases
+
+  - pack images into texture atlases
+  - sample images from texture atlases
+  - generate tiling masks from texture atlases
+
+- computing and rendering 2D signed distance fields
+- computing and approximating surface geometry 
+
+  - normals to height
+  - height to normals 
+  - height/normals to curvature
+
+- approximating ambient occlusion and bent normals
+- blending multiple normal maps
+- generating tiling noise
+- warping image coordinates
+- transforming 1D and 2D images to and from Haar wavelet coefficients
+- computing chromatic point spread functions and approximating aperture diffraction
 
 Getting started
 ---------------

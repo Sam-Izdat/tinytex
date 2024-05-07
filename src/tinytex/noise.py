@@ -5,7 +5,7 @@ from scipy.spatial import cKDTree
 from tinycio import MonoImage
 
 from .util import *
-from .interpolation import Smoothstep
+from .smoothstep import Smoothstep
 
 class Noise:
 

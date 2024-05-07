@@ -8,7 +8,7 @@ import torch
 
 from .util import *
 from .resampling import Resampling
-from .interpolation import Smoothstep
+from .smoothstep import Smoothstep
 
 class SDF:
 

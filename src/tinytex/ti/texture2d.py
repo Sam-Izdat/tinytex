@@ -13,7 +13,7 @@ from .prep import *
 @ti.data_oriented
 class Texture2D:
     """
-    Taichi 2D read-write texture. Can be initialized with either texture shape or texture data.
+    2D read-write texture. Can be initialized with either texture shape or texture data.
 
     :param im: Tuple sized (C, H, W) indicating texture shape or image data as [C, H, W] sized 
         PyTorch tensor, NumPy array, Taichi vector or scalar value.

@@ -26,7 +26,7 @@ class Smoothstep:
               - INV_QUARTIC_POLYNOMIAL
               - C1
             * - QUINTIC_POLYNOMIAL
-              - (NONE)
+              - 
               - C2
             * - QUADRATIC_RATIONAL
               - INV_QUADRATIC_RATIONAL
