@@ -19,7 +19,7 @@ import numpy as np
 # - float, tm.vec2, tm.vec3, or tm.vec4 value
 # - other numeric value if C=1
 
-def prep_r(val:torch.Tensor, flip_y:bool = False):
+def prep_2d_r(val:torch.Tensor, flip_y:bool = False):
     """Converts image data to [H, W] floating point torch image tensor"""
     if torch.is_tensor(val) and val.dim() == 3:
         if val.size(0) != 1: val = val[0:1]
@@ -39,7 +39,7 @@ def prep_r(val:torch.Tensor, flip_y:bool = False):
     if flip_y: val = torch.flip(val, dims=[0])
     return val.float()
 
-def prep_rg(val:torch.Tensor, flip_y:bool = False):
+def prep_2d_rg(val:torch.Tensor, flip_y:bool = False):
     """Converts image data to [H, W, C=2] floating point torch image tensor"""
     if torch.is_tensor(val) and val.dim() == 3 and val.size(0) == 2:
         val = val.permute(1, 2, 0) # C, H, W -> H, W, C
@@ -55,7 +55,7 @@ def prep_rg(val:torch.Tensor, flip_y:bool = False):
     if flip_y: val = torch.flip(val, dims=[0])
     return val.float()
 
-def prep_rgb(val:torch.Tensor, flip_y:bool = False):
+def prep_2d_rgb(val:torch.Tensor, flip_y:bool = False):
     """Converts image data to [H, W, C=3] floating point torch image tensor"""
     if torch.is_tensor(val) and val.dim() == 3 and val.size(0) == 3:
         val = val.permute(1, 2, 0) # C, H, W -> H, W, C
@@ -71,7 +71,7 @@ def prep_rgb(val:torch.Tensor, flip_y:bool = False):
     if flip_y: val = torch.flip(val, dims=[0])
     return val.float()
 
-def prep_rgba(val:torch.Tensor, flip_y:bool = False):
+def prep_2d_rgba(val:torch.Tensor, flip_y:bool = False):
     """Converts image data to [H, W, C=4] floating point torch image tensor"""
     if torch.is_tensor(val) and val.dim() == 3 and val.size(0) == 4:
         val = val.permute(1, 2, 0) # C, H, W -> H, W, C

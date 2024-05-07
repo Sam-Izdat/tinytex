@@ -47,10 +47,10 @@ class Texture2D:
             self.channels = count_channels(im)
 
             # prepare data for a ti field
-            if self.channels == 1:      im = prep_r(im, self.flip_y)
-            elif self.channels == 2:    im = prep_rg(im, self.flip_y)
-            elif self.channels == 3:    im = prep_rgb(im, self.flip_y)
-            elif self.channels == 4:    im = prep_rgba(im, self.flip_y)
+            if self.channels == 1:      im = prep_2d_r(im, self.flip_y)
+            elif self.channels == 2:    im = prep_2d_rg(im, self.flip_y)
+            elif self.channels == 3:    im = prep_2d_rgb(im, self.flip_y)
+            elif self.channels == 4:    im = prep_2d_rgba(im, self.flip_y)
             else: raise Exception(f"Could not populate image data; unexpected number of channels ({self.channels})")
 
             self.height = im.size(0)
@@ -84,8 +84,8 @@ class Texture2D:
 
         .. note::
 
-            This is not done implicitly using :code:`__del__` as that can sometimes cause Taichi to throws errors, 
-            for reasons undetermined, as of version 1.7.1.
+            This is not done implicitly using :code:`__del__` as that can sometimes cause Taichi to throw errors, 
+            for reasons yet undetermined, as of version 1.7.1.
 
         """
         
@@ -102,13 +102,13 @@ class Texture2D:
         """
         assert self.channels == count_channels(im), f"image tensor must have {self.channels} channels; got {count_channels(im)}"
         if self.channels == 1:      
-            im = prep_r(im, self.flip_y)
+            im = prep_2d_r(im, self.flip_y)
         elif self.channels == 2:    
-            im = prep_rg(im, self.flip_y)
+            im = prep_2d_rg(im, self.flip_y)
         elif self.channels == 3:    
-            im = prep_rgb(im, self.flip_y)
+            im = prep_2d_rgb(im, self.flip_y)
         elif self.channels == 4:    
-            im = prep_rgba(im, self.flip_y)
+            im = prep_2d_rgba(im, self.flip_y)
         else: raise Exception(f"Could not populate image data; unexpected number of channels ({self.channels})")
         height = im.size(0)
         width = im.size(1)

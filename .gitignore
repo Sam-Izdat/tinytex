@@ -3,6 +3,7 @@ _static/*
 out/*
 data/test/*
 scratch/*
+examples/*.ini
 !out/README.md
 
 # Editors

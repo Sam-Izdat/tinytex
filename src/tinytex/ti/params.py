@@ -76,15 +76,15 @@ class WrapMode(IntEnum):
         * - REPEAT_X
           - Repeat x/width only.
           - ✓
-          -
+          - ✓
         * - REPEAT_Y
           - Repeat y/height only.
           - ✓
-          -
+          - ✓
         * - REPEAT_Z
           - Repeat z/depth only.
           -
-          -
+          - ✓
     """
     REPEAT      = 1<<0
     CLAMP       = 1<<1
