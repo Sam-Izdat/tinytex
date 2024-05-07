@@ -9,6 +9,44 @@ class Smoothstep:
     """Smoothstep interpolation."""
     
     class Interpolant(IntEnum):
+        """
+        Interpolant. See: https://iquilezles.org/articles/smoothsteps/
+        
+        .. list-table:: Available Interpolants:
+            :widths: 40 40 20
+            :header-rows: 1
+
+            * - Identifier
+              - Inverse Identifier
+              - Continuity
+            * - CUBIC_POLYNOMIAL
+              - INV_CUBIC_POLYNOMIAL
+              - C1
+            * - QUARTIC_POLYNOMIAL
+              - INV_QUARTIC_POLYNOMIAL
+              - C1
+            * - QUINTIC_POLYNOMIAL
+              - (NONE)
+              - C2
+            * - QUADRATIC_RATIONAL
+              - INV_QUADRATIC_RATIONAL
+              - C1
+            * - CUBIC_RATIONAL
+              - INV_CUBIC_RATIONAL
+              - C2
+            * - RATIONAL
+              - INV_RATIONAL
+              - CV
+            * - PIECEWISE_QUADRATIC
+              - INV_PIECEWISE_QUADRATIC
+              - C1
+            * - PIECEWISE_POLYNOMIAL
+              - INV_PIECEWISE_POLYNOMIAL
+              - CV
+            * - TRIGONOMETRIC
+              - INV_TRIGONOMETRIC
+              - C1
+        """
         CUBIC_POLYNOMIAL            = 1<<0
         QUARTIC_POLYNOMIAL          = 1<<1
         QUINTIC_POLYNOMIAL          = 1<<2
@@ -42,7 +80,6 @@ class Smoothstep:
             INV_QUADRATIC_RATIONAL | INV_CUBIC_RATIONAL | INV_RATIONAL | \
             INV_PIECEWISE_QUADRATIC | INV_PIECEWISE_POLYNOMIAL | INV_TRIGONOMETRIC
 
-        # https://iquilezles.org/articles/smoothsteps/
         # Continuity
         # C1 - second derivative does not evaluate to zero
         # C2 - second derivative does evaluate to zero

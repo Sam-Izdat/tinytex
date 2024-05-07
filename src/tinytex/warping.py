@@ -8,6 +8,7 @@ class Warping:
 
     @classmethod
     def log_polar(cls, im:torch.Tensor, start_from:int=1, n_angular=None, n_radial=None) -> torch.Tensor:
+        """Log polar transform"""
         assert start_from > 0, "must start from 1 or greater"
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size
@@ -36,6 +37,7 @@ class Warping:
 
     @classmethod
     def inverse_log_polar(cls, im:torch.Tensor) -> torch.Tensor:
+        """Inverse log polar transform"""
         ndim = len(im.size())
         assert ndim == 3 or ndim == 4, cls.err_size
         nobatch = ndim == 3

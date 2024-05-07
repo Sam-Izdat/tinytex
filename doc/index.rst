@@ -6,19 +6,19 @@ Python texture sampling, processing and synthesis library for PyTorch-involved p
 This library is a hodgepodge of tangentially-related procedures useful for sampling, reinterpreting, 
 creating and modifying various kinds of textures. It can be used to:
 
-- sample 2D and 3D textures with Taichi (installed with Taichi optional requirement)
-- resample images
+- sample 2D and 3D textures with Taichi (if installed with Taichi optional requirement)
+- resample/rescale, crop and pad images
 - create texture atlases and sample images from texture atlases
-- split images into tiles and merge tiles into images
+- split images into tiles and merge tiles
 - seamlessly stitch textures with color or vector data for mutual tiling or self-tiling
 - compute and render 2D signed distance fields
 - compute and approximate surface geometry (normals/displacement/curvature)
-- approximate occlusion and bent normals
+- approximate ambient occlusion and bent normals
 - blend normal maps
 - generate tiling noise
 - generate tiling masks from texture atlases
 - transform images to and from log-polar coordinate space
-- convert image data to and from Haar wavelet coefficients
+- transform 1D and 2D images to and from Haar wavelet coefficients
 - compute chromatic point spread functions and approximate aperture diffraction
 
 Getting started

@@ -97,6 +97,7 @@ class Noise:
         density:float=5., 
         tileable:tuple=(True, True), 
         interpolant:str='quintic_polynomial') -> torch.Tensor:
+        """Perlin noise."""
         assert density > 0., cls.err_density_zero
         assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         res = (
@@ -183,6 +184,7 @@ class Noise:
             lacunarity:int=2, 
             tileable:tuple=(True, True),
             interpolant:str='quintic_polynomial') -> torch.Tensor:
+        """Fractal Perlin noise."""
         assert density > 0., cls.err_density_zero
         assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         res = (
@@ -201,6 +203,7 @@ class Noise:
             tileable:tuple=(True, True),
             interpolant:str='quintic_polynomial', 
             ridge:bool=False) -> torch.Tensor:
+        """Turbulence noise."""
         assert density > 0., cls.err_density_zero
         assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         res = (
@@ -242,6 +245,7 @@ class Noise:
         density:float=5., 
         intensity:float=1., 
         tileable:tuple=(True, True)) -> torch.Tensor:
+        """Worley noise."""
         assert density > 0., cls.err_density_zero
         assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         density *= 10

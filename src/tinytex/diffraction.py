@@ -24,6 +24,7 @@ class Diffraction:
         resize:int=512,
         aperture_blur:int=5,
         context=None) -> torch.Tensor:
+        """Compute chromatic point spread function."""
         ndim = len(aperture.size())
         assert ndim == 2 or ndim == 3, "aperture tensor needs to be sized [H, W] or [C=1, H, W]"
         nochan = ndim == 2
@@ -80,6 +81,7 @@ class Diffraction:
         diffraction_strength:float, # artist-controlled dial of diffraction strength; rec. 0 - 1
         lum_threshold:float=10.
         ):
+        """Apply chromatic glare to using point spread function."""
         with torch.no_grad():            
             _, H_in, W_in = im.size()
             im_ten = im.clone()
@@ -96,7 +98,7 @@ class Diffraction:
 
             _, H_padded, W_padded = im_ten.size()
 
-            # Using Rayleigh Criterion for scaling, assuming that aperture radius is in cm.
+            # I think the idea was using Rayleigh Criterion for scaling, assuming that aperture radius is in cm?
             # Then theta, in radians, is scaled by another user-defined factor.
             rayleigh_fac = (1.22 * 550.)/ (aperture_radius * 2. * 1e+7) 
             rayleigh_fac *= diffraction_strength * 1000.

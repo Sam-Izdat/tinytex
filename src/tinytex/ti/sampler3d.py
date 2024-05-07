@@ -1,9 +1,3 @@
-"""
-sampler3d
-=================================
-Taichi 3D texture sampling module. Supports CPU, CUDA and Vulkan backends.
- """
-
 import typing
 from typing import Union
 
@@ -21,24 +15,27 @@ def sample_trilinear_clamp(tex:ti.template(), uvw:tm.vec3, repeat_w:int, repeat_
     width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
     eps = 1e-7
 
-    uvw = tm.clamp(uvw, 0., 1.-eps)
+    uvwb = tm.vec3(0.)
+    uvwb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
+    uvwb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvwb.z = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.z)
 
     x0, y0, z0, x1, y1, z1 = 0, 0, 0, 0, 0, 0
-    dim = tm.vec3(float(width * repeat_w), float(height * repeat_h),  float(depth * repeat_d))
-    pos = tm.vec3(uvw.x * dim.x - 0.5, uvw.y * dim.y - 0.5, uvw.z * dim.z - 0.5)
-                
-    x0, y0, z0 = int(tm.floor(pos.x)), int(tm.floor(pos.y)), int(tm.floor(pos.z))
-    
-    dx = (pos.x + 1.) - (float(x0) + 1.)
-    dy = (pos.y + 1.) - (float(y0) + 1.)
-    dz = (pos.z + 1.) - (float(z0) + 1.)
+    pos = tm.vec2(uvwb.x * width, uvwb.y * height, uvwb.z * depth)
+    pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.) 
+    pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
+    pos.z = tm.clamp(pos.z - 0.5, 0., depth - 1.)
 
-    x0 = tm.clamp(x0, 0, int(dim.x)-1)%width
-    y0 = tm.clamp(y0, 0, int(dim.y)-1)%height
-    z0 = tm.clamp(z0, 0, int(dim.z)-1)%depth
-    x1 = tm.min(x0+1, int(dim.x)-1)%width
-    y1 = tm.min(y0+1, int(dim.y)-1)%height
-    z1 = tm.min(z0+1, int(dim.z)-1)%depth
+    x0, y0, z0 = int(pos.x), int(pos.y), int(pos.z)
+
+    dx = pos.x - float(x0)
+    dy = pos.y - float(y0)
+    dz = pos.z - float(z0)
+
+    x0, y0 = int(pos.x), int(pos.y), int(pos.z)
+    x1 = tm.min(x0+1, int(width - 1))
+    y1 = tm.min(y0+1, int(height - 1))
+    z1 = tm.min(z0+1, int(depth - 1))
     
     q000 = tex[x0, y0, z0]
     q001 = tex[x0, y0, z1]
@@ -66,20 +63,23 @@ def sample_trilinear_repeat(tex:ti.template(), uvw:tm.vec3, repeat_w:int, repeat
     tex = tex[0, 0, 0]
     width, height, depth = tex.shape[0], tex.shape[1], tex.shape[2]
 
-    uvw = uvw % 1.
+    uvwb = (uvw * tm.vec3(repeat_w, repeat_h, repeat_d)) % 1.
 
     x0, y0, z0, x1, y1, z1 = 0, 0, 0, 0, 0, 0
-    dim = tm.vec3(float(width * repeat_w), float(height * repeat_h),  float(depth * repeat_d))
-    pos = tm.vec3(uvw.x * dim.x - 0.5, uvw.y * dim.y - 0.5, uvw.z * dim.z - 0.5)
-                
-    x0, y0, z0 = int(tm.floor(pos.x)), int(tm.floor(pos.y)), int(tm.floor(pos.z))
-    
-    dx = (pos.x + 1.) - (float(x0) + 1.)
-    dy = (pos.y + 1.) - (float(y0) + 1.)
-    dz = (pos.z + 1.) - (float(z0) + 1.)
+    pos = tm.vec2(uvwb.x * width, uvwb.y * height, uvwb.z * depth)
+    pos.x = (pos.x - 0.5) % width
+    pos.y = (pos.y - 0.5) % height
+    pos.z = (pos.z - 0.5) % depth
 
-    x0, y0, z0 = x0%width, y0%height, z0%depth
-    x1, y1, z1 = (x0+1)%width, (y0+1)%height, (z0+1)%depth
+    x0, y0, z0 = int(pos.x), int(pos.y), int(pos.z)
+
+    dx = pos.x - float(x0)
+    dy = pos.y - float(y0)
+    dx = pos.z - float(z0)
+    
+    x1 = (x0+1) % width
+    y1 = (y0+1) % height
+    z1 = (z0+1) % depth
     
     q000 = tex[x0, y0, z0]
     q001 = tex[x0, y0, z1]

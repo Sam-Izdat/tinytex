@@ -23,6 +23,7 @@ class SDF:
         length_factor:float=0.1, 
         threshold:float=None,
         tile_to:tuple=None) -> torch.Tensor:
+        """Compute SDF from image."""
         H, W = im.shape[1:]
         if tile_to is not None: assert max(H, W) <= tile_to, err_tile
         if threshold is not None: im = (im > threshold)
@@ -46,6 +47,7 @@ class SDF:
         value1:float=1.,
         interpolant:str='quintic_polynomial',
         mode:str='bilinear'):
+        """Render SDF."""
         H, W = shape[0], shape[1]
         sdf = Resampling.resize(sdf, (H, W), mode=mode)
         ones = torch.ones_like(sdf)
@@ -55,10 +57,12 @@ class SDF:
 
     @classmethod
     def min(cls, sdf1:torch.Tensor, sdf2:torch.Tensor):
+        """Min of two SDFs."""
         return torch.minimum(sdf1, sdf2)
 
     @classmethod
     def max(cls, sdf1:torch.Tensor, sdf2:torch.Tensor):
+        """Max of two SDFs."""
         return torch.maximum(sdf1, sdf2)
 
     @classmethod
@@ -67,6 +71,7 @@ class SDF:
         radius:int=20, 
         length_factor:float=0.1, 
         tile_to:int=None) -> torch.Tensor:
+        """Generate circle SDF."""
         y, x = torch.meshgrid(torch.arange(size), torch.arange(size), indexing="xy")
         x_nrm, y_nrm = x - size // 2, y - size // 2
         dist = cls.__length(torch.stack([x_nrm, y_nrm], dim=-1)) - float(radius)
@@ -82,6 +87,7 @@ class SDF:
         box_shape:Tuple[int, int]=(32, 32), 
         length_factor:float=0.1, 
         tile_to:int=None) -> torch.Tensor:
+        """Generate rectangle/box SDF."""
         assert size <= tile_to, cls.err_tile
         h, w = box_shape[0] // 2, box_shape[1] // 2
         y, x = torch.meshgrid(torch.arange(size), torch.arange(size), indexing="xy")
@@ -101,6 +107,7 @@ class SDF:
         b:Tuple[int, int]=(32, 64), 
         length_factor:float=0.1, 
         tile_to:int=None) -> torch.Tensor:
+        """Generate line segment SDF."""
         assert size <= tile_to, cls.err_tile
         ax, ay = a
         bx, by = b

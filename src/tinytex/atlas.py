@@ -44,6 +44,7 @@ class Atlas:
         auto_crop:bool=True, 
         row_pack:bool=False,
         sort:str='height') -> (torch.Tensor, tuple):
+        """Pack textures into atlas."""
         H, W = max_height, max_width
         auto_crop = auto_crop and not cls.auto_force_square
         if W == 0 or H == 0:
@@ -101,6 +102,7 @@ class Atlas:
 
     @combomethod
     def sample(cls, atlas:torch.Tensor, index:dict, key:Union[str, int]):
+        """Retrieve image from atlas."""
         assert len(index) > 0, "index is empty"
         if isinstance(key, str) and key in index:
             x0, y0, x1, y1 = index[key]
@@ -113,6 +115,7 @@ class Atlas:
 
     @combomethod
     def sample_random(cls, atlas:torch.Tensor, index:dict):
+        """Retrieve random image from atlas."""
         assert len(index) > 0, "index is empty"
         x0, y0, x1, y1 = random.choice(list(index.values()))
         return atlas[:, int(y0):int(y1), int(x0):int(x1)]

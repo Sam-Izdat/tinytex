@@ -409,7 +409,7 @@ class Geometry:
     @classmethod
     def normalize(cls, normal_map:torch.Tensor, rescaled:bool=False) -> torch.Tensor:
         """
-        Normalize xyz vectors a unit length.
+        Normalize xyz vectors to unit length.
 
         :param normal_map: Tensor of normal vectors sized [N, C=3, H, W] or [C=3, H, W].
         :param rescaled: Input and returned unit vector tensors should be in [0, 1] value range.

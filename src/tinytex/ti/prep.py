@@ -7,13 +7,6 @@ import taichi.math as tm
 import torch
 import numpy as np   
 
-# @ti.data_oriented
-# class TextureGrid2D:
-#     """
-#     Taichi spatial grid of 2D read-write textures. Can be initialized with either texture shape or texture data. 
-#     Mipmapping is not supported.
-#     """
-
 # This "prep_x" stuff is ugly and redundant, but this is easier with some special handling.
 #
 # Valid input data here can be any of: 
@@ -25,6 +18,7 @@ import numpy as np
 # - [C] numpy array (single color value)
 # - float, tm.vec2, tm.vec3, or tm.vec4 value
 # - other numeric value if C=1
+
 def prep_r(val:torch.Tensor, flip_y:bool = False):
     """Converts image data to [H, W] floating point torch image tensor"""
     if torch.is_tensor(val) and val.dim() == 3:

@@ -5,23 +5,41 @@ class FilterMode(IntEnum):
     Texture filter mode.
 
     .. list-table:: Available Filter Modes:
-        :widths: 15 85
+        :widths: 15 85 5 5
         :header-rows: 1
 
         * - Identifier
           - Description
+          - 2D
+          - 3D
         * - NEAREST
           - Nearest neighbor - point sampling.
+          - ✓
+          - ✓
         * - BILINEAR
           - Bilinear interpolation.
+          - ✓
+          - 
+        * - TRILINEAR
+          - Trilinear interpolation.
+          - 
+          - ✓
         * - HERMITE
           - Cubic Hermite (bicubic) interpolation.
+          - ✓
+          - 
         * - B_SPLINE
-          - B-spline approximation.
+          - Cubic B-spline approximation.
+          - ✓
+          - 
         * - MITCHELL_NETRAVALI
           - Mitchell-Netravali interpolation/approximation.
+          - ✓
+          - 
         * - CATMULL_ROM
           - Catmull-Rom interpolation.
+          - ✓
+          - 
     """
     NEAREST             = 1<<0
     BILINEAR            = 1<<1
@@ -40,21 +58,33 @@ class WrapMode(IntEnum):
     Texture wrap mode.
 
     .. list-table:: Available Wrap Modes:
-        :widths: 15 85
+        :widths: 15 75 5 5
         :header-rows: 1
 
         * - Identifier
           - Description
+          - 2D
+          - 3D
         * - REPEAT
           - Repeat all dimensions.
+          - ✓
+          - ✓
         * - CLAMP
           - Clamp all dimentions.
+          - ✓
+          - ✓
         * - REPEAT_X
           - Repeat x/width only.
+          - ✓
+          -
         * - REPEAT_Y
           - Repeat y/height only.
+          - ✓
+          -
         * - REPEAT_Z
           - Repeat z/depth only.
+          -
+          -
     """
     REPEAT      = 1<<0
     CLAMP       = 1<<1

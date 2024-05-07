@@ -1,9 +1,3 @@
-"""
-sampler2d
-=================================
-Taichi 2D texture sampling module. Supports CPU, CUDA and Vulkan backends.
- """
-
 # NOTE: The filtering here is inefficient and does not even use hardware-native sampling. 
 # The purpose of this module is convenience, but there's a lot of room for optimization. See: 
 # https://developer.nvidia.com/gpugems/gpugems2/part-iii-high-quality-rendering/chapter-20-fast-third-order-texture-filtering
@@ -74,7 +68,7 @@ class Sampler2D:
         window_high.z = window_high.x + (tex.width >> ml_high)
 
         window_low.y = tex.height - (tex.height >> tm.max(ml_low - 1, 0))
-        window_high.y = tex.height - (tex.height >> (ml_high - 1))
+        window_high.y = tex.height - (tex.height >> tm.max(ml_high - 1, 0))
 
         window_low.w = window_low.y + (tex.height >> ml_low)
         window_high.w = window_high.y + (tex.height >> ml_high)
@@ -544,7 +538,7 @@ def dxdy_2D_scoped_grid_bilinear(
     .. highlight:: text
     .. code-block:: text
         
-        xy_kernel:     [5, 3]
+        xy_kernel:     [5, 2]
         grid_height:   3
         grid_width:    4
         probe_height:  2
@@ -715,7 +709,7 @@ def dxdy_2D_scoped_grid_cubic(
     .. highlight:: text
     .. code-block:: text
         
-        xy_kernel:     [5, 3]
+        xy_kernel:     [5, 2]
         grid_height:   3
         grid_width:    4
         probe_height:  2
