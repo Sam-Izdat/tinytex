@@ -22,19 +22,19 @@ class Sampler2D:
     """
     Taichi 2D texture sampler.
 
-    :param repeat_w: Number of times to repeat image width/x.
-    :param repeat_h: Number of times to repeat image height/y.
+    :param repeat_u: Number of times to repeat image width/x.
+    :param repeat_v: Number of times to repeat image height/y.
     :param filter_mode: Filter mode.
     :param wrap_mode: Wrap mode.
     """
     def __init__(self, 
-        repeat_w:int=1, 
-        repeat_h:int=1, 
+        repeat_u:int=1, 
+        repeat_v:int=1, 
         filter_mode:Union[FilterMode, str]=FilterMode.BILINEAR, 
         wrap_mode:Union[WrapMode, str]=WrapMode.REPEAT
         ):
-        self.repeat_w = repeat_w
-        self.repeat_h = repeat_h
+        self.repeat_u = repeat_u
+        self.repeat_v = repeat_v
         self.filter_mode = int(filter_mode) if isinstance(filter_mode, FilterMode) else FilterMode[filter_mode.strip().upper()]
         self.wrap_mode = int(wrap_mode) if isinstance(wrap_mode, WrapMode) else WrapMode[wrap_mode.strip().upper()]
 
@@ -80,231 +80,231 @@ class Sampler2D:
         if ti.static(tex.channels == 1):
             if ti.static(self.filter_mode == FilterMode.NEAREST):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_nn_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_nn_r_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_nn_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_nn_r_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_nn_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_nn_r_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_nn_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_nn_r_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window)
             elif ti.static(self.filter_mode == FilterMode.BILINEAR):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_bilinear_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_bilinear_r_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_bilinear_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_bilinear_r_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_bilinear_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_bilinear_r_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_bilinear_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_bilinear_r_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window)
             elif ti.static(self.filter_mode == FilterMode.B_SPLINE):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_b_spline_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_r_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_b_spline_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_r_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_b_spline_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_r_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_b_spline_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_r_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window)
             elif ti.static(self.filter_mode == FilterMode.HERMITE):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_hermite_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_r_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_hermite_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_r_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_hermite_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_r_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_hermite_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_r_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window)
             elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
                 third = 0.3333333
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
             elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
                 b, c = 0., 0.5
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_r_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_r_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_r_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_r_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
         elif ti.static(tex.channels == 2):
             if ti.static(self.filter_mode == FilterMode.NEAREST):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_nn_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                    return sample_nn_rg_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window).rg
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_nn_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                    return sample_nn_rg_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window).rg
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_nn_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                    return sample_nn_rg_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window).rg
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_nn_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                    return sample_nn_rg_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window).rg
             elif ti.static(self.filter_mode == FilterMode.BILINEAR):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_bilinear_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                    return sample_bilinear_rg_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window).rg
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_bilinear_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                    return sample_bilinear_rg_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window).rg
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_bilinear_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                    return sample_bilinear_rg_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window).rg
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_bilinear_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rg
+                    return sample_bilinear_rg_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window).rg
             elif ti.static(self.filter_mode == FilterMode.B_SPLINE):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_b_spline_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_rg_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_b_spline_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_rg_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_b_spline_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_rg_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_b_spline_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_rg_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window)
             elif ti.static(self.filter_mode == FilterMode.HERMITE):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_hermite_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_rg_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_hermite_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_rg_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_hermite_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_rg_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_hermite_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_rg_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window)
             elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
                 third = 0.3333333
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
             elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
                 b, c = 0., 0.5
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_rg_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_rg_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_rg_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_rg_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
         elif ti.static(tex.channels == 3):
             if ti.static(self.filter_mode == FilterMode.NEAREST):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_nn_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                    return sample_nn_rgb_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window).rgb
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_nn_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                    return sample_nn_rgb_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window).rgb
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_nn_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                    return sample_nn_rgb_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window).rgb
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_nn_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                    return sample_nn_rgb_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window).rgb
             elif ti.static(self.filter_mode == FilterMode.BILINEAR):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_bilinear_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                    return sample_bilinear_rgb_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window).rgb
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_bilinear_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                    return sample_bilinear_rgb_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window).rgb
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_bilinear_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                    return sample_bilinear_rgb_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window).rgb
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_bilinear_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rgb
+                    return sample_bilinear_rgb_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window).rgb
             elif ti.static(self.filter_mode == FilterMode.B_SPLINE):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_b_spline_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_rgb_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_b_spline_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_rgb_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_b_spline_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_rgb_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_b_spline_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_rgb_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window)
             elif ti.static(self.filter_mode == FilterMode.HERMITE):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_hermite_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_rgb_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_hermite_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_rgb_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_hermite_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_rgb_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_hermite_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_rgb_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window)
             elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
                 third = 0.3333333
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
             elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
                 b, c = 0., 0.5
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_rgb_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_rgb_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_rgb_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_rgb_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
         elif ti.static(tex.channels == 4):
             if ti.static(self.filter_mode == FilterMode.NEAREST):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_nn_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                    return sample_nn_rgba_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window).rgba
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_nn_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                    return sample_nn_rgba_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window).rgba
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_nn_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                    return sample_nn_rgba_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window).rgba
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_nn_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                    return sample_nn_rgba_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window).rgba
             elif ti.static(self.filter_mode == FilterMode.BILINEAR):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_bilinear_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                    return sample_bilinear_rgba_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window).rgba
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_bilinear_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                    return sample_bilinear_rgba_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window).rgba
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_bilinear_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                    return sample_bilinear_rgba_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window).rgba
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_bilinear_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window).rgba
+                    return sample_bilinear_rgba_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window).rgba
             elif ti.static(self.filter_mode == FilterMode.B_SPLINE):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_b_spline_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_rgba_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_b_spline_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_rgba_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_b_spline_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_rgba_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_b_spline_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_b_spline_rgba_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window)
             elif ti.static(self.filter_mode == FilterMode.HERMITE):
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_hermite_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_rgba_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_hermite_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_rgba_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_hermite_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_rgba_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_hermite_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window)
+                    return sample_hermite_rgba_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window)
             elif ti.static(self.filter_mode == FilterMode.MITCHELL_NETRAVALI):
                 third = 0.3333333
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, third, third)
+                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window, third, third)
             elif ti.static(self.filter_mode == FilterMode.CATMULL_ROM):
                 b, c = 0., 0.5
                 if ti.static(self.wrap_mode == WrapMode.REPEAT):
-                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_rgba_repeat(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.CLAMP):
-                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_rgba_clamp(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_X):
-                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_rgba_repeat_x(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
                 elif ti.static(self.wrap_mode == WrapMode.REPEAT_Y):
-                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_w, self.repeat_h, window, b, c)
+                    return sample_mitchell_netravali_rgba_repeat_y(tex.field, uv, self.repeat_u, self.repeat_v, window, b, c)
 
     @ti.func
     def sample(self, tex:ti.template(), uv:tm.vec2):
@@ -436,14 +436,14 @@ def dxdy_bilinear_clamp(
     uv:tm.vec2,
     width:int,
     height:int,
-    repeat_w:int,
-    repeat_h:int,
+    repeat_u:int,
+    repeat_v:int,
     ) -> tuple:
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.) 
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -459,10 +459,10 @@ def dxdy_bilinear_repeat(
     uv:tm.vec2,
     width:int,
     height:int,
-    repeat_w:int,
-    repeat_h:int,
+    repeat_u:int,
+    repeat_v:int,
     ) -> tuple:
-    uvb = (uv * tm.vec2(repeat_w, repeat_h)) % 1.
+    uvb = (uv * tm.vec2(repeat_u, repeat_v)) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -478,14 +478,14 @@ def dxdy_bilinear_repeat_x(
     uv:tm.vec2,
     width:int,
     height:int,
-    repeat_w:int,
-    repeat_h:int,
+    repeat_u:int,
+    repeat_v:int,
     ) -> tuple:
     hpy = 0.5 / height
     eps = 1e-7
     uvb = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hpy, 1. - hpy)
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hpy, 1. - hpy)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -501,14 +501,14 @@ def dxdy_bilinear_repeat_y(
     uv:tm.vec2,
     width:int,
     height:int,
-    repeat_w:int,
-    repeat_h:int,
+    repeat_u:int,
+    repeat_v:int,
     ) -> tuple:
     hpx = 0.5 / width
     eps = 1e-7
     uvb = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hpx, 1. - hpx)
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hpx, 1. - hpx)
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
@@ -586,14 +586,14 @@ def dxdy_cubic_clamp(
     uv:tm.vec2,
     width:int,
     height:int,
-    repeat_w:int,
-    repeat_h:int,
+    repeat_u:int,
+    repeat_v:int,
     ) -> tuple:
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.) 
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -614,12 +614,12 @@ def dxdy_cubic_repeat(
     uv:tm.vec2,
     width:int,
     height:int,
-    repeat_w:int,
-    repeat_h:int,
+    repeat_u:int,
+    repeat_v:int,
     ) -> tuple:
     uvb = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -640,14 +640,14 @@ def dxdy_cubic_repeat_x(
     uv:tm.vec2,
     width:int,
     height:int,
-    repeat_w:int,
-    repeat_h:int,
+    repeat_u:int,
+    repeat_v:int,
     ) -> tuple:
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -668,14 +668,14 @@ def dxdy_cubic_repeat_y(
     uv:tm.vec2,
     width:int,
     height:int,
-    repeat_w:int,
-    repeat_h:int,
+    repeat_u:int,
+    repeat_v:int,
     ) -> tuple:
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.) 
     pos.y = (pos.y - 0.5) % height
@@ -755,12 +755,12 @@ def dxdy_2D_scoped_grid_cubic(
 # ------------------------------------------------------
 
 @ti.func
-def sample_hermite_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
+def sample_hermite_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -815,12 +815,12 @@ def sample_hermite_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repea
     return out
 
 @ti.func
-def sample_hermite_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
+def sample_hermite_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -866,14 +866,14 @@ def sample_hermite_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
     return out
 
 @ti.func
-def sample_hermite_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
+def sample_hermite_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -925,14 +925,14 @@ def sample_hermite_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat
     return out
 
 @ti.func
-def sample_hermite_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
+def sample_hermite_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -981,14 +981,14 @@ def sample_hermite_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repe
     return out
 
 @ti.func
-def sample_hermite_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
+def sample_hermite_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -1040,14 +1040,14 @@ def sample_hermite_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
     return out
 
 @ti.func
-def sample_hermite_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
+def sample_hermite_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -1096,14 +1096,14 @@ def sample_hermite_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, r
     return out
 
 @ti.func
-def sample_hermite_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
+def sample_hermite_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
@@ -1154,14 +1154,14 @@ def sample_hermite_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
     return out
 
 @ti.func
-def sample_hermite_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
+def sample_hermite_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
@@ -1211,97 +1211,97 @@ def sample_hermite_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, r
 
 # previously - ti.real_func
 @ti.func
-def sample_hermite_r_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_hermite_repeat_float(tex, uv, repeat_w, repeat_h, window)
+def sample_hermite_r_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_hermite_repeat_float(tex, uv, repeat_u, repeat_v, window)
 
 # previously - ti.real_func
 @ti.func
-def sample_hermite_r_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_hermite_clamp_float(tex, uv, repeat_w, repeat_h, window)
+def sample_hermite_r_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_hermite_clamp_float(tex, uv, repeat_u, repeat_v, window)
 
 # previously - ti.real_func
 @ti.func
-def sample_hermite_r_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_hermite_repeat_x_float(tex, uv, repeat_w, repeat_h, window)
+def sample_hermite_r_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_hermite_repeat_x_float(tex, uv, repeat_u, repeat_v, window)
 
 # previously - ti.real_func
 @ti.func
-def sample_hermite_r_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_hermite_repeat_y_float(tex, uv, repeat_w, repeat_h, window)
-
-
-
-# previously - ti.real_func
-@ti.func
-def sample_hermite_rg_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_hermite_repeat_vec(tex, uv, repeat_w, repeat_h, window, 2))
-
-# previously - ti.real_func
-@ti.func
-def sample_hermite_rg_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_hermite_clamp_vec(tex, uv, repeat_w, repeat_h, window, 2))
-
-# previously - ti.real_func
-@ti.func
-def sample_hermite_rg_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_hermite_repeat_x_vec(tex, uv, repeat_w, repeat_h, window, 2))
-
-# previously - ti.real_func
-@ti.func
-def sample_hermite_rg_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_hermite_repeat_y_vec(tex, uv, repeat_w, repeat_h, window, 2))
+def sample_hermite_r_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_hermite_repeat_y_float(tex, uv, repeat_u, repeat_v, window)
 
 
 
 # previously - ti.real_func
 @ti.func
-def sample_hermite_rgb_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_hermite_repeat_vec(tex, uv, repeat_w, repeat_h, window, 3))
+def sample_hermite_rg_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_hermite_repeat_vec(tex, uv, repeat_u, repeat_v, window, 2))
 
 # previously - ti.real_func
 @ti.func
-def sample_hermite_rgb_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_hermite_clamp_vec(tex, uv, repeat_w, repeat_h, window, 3))
+def sample_hermite_rg_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_hermite_clamp_vec(tex, uv, repeat_u, repeat_v, window, 2))
 
 # previously - ti.real_func
 @ti.func
-def sample_hermite_rgb_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_hermite_repeat_x_vec(tex, uv, repeat_w, repeat_h, window, 3))
+def sample_hermite_rg_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_hermite_repeat_x_vec(tex, uv, repeat_u, repeat_v, window, 2))
 
 # previously - ti.real_func
 @ti.func
-def sample_hermite_rgb_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_hermite_repeat_y_vec(tex, uv, repeat_w, repeat_h, window, 3))
+def sample_hermite_rg_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_hermite_repeat_y_vec(tex, uv, repeat_u, repeat_v, window, 2))
+
+
+
+# previously - ti.real_func
+@ti.func
+def sample_hermite_rgb_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_hermite_repeat_vec(tex, uv, repeat_u, repeat_v, window, 3))
+
+# previously - ti.real_func
+@ti.func
+def sample_hermite_rgb_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_hermite_clamp_vec(tex, uv, repeat_u, repeat_v, window, 3))
+
+# previously - ti.real_func
+@ti.func
+def sample_hermite_rgb_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_hermite_repeat_x_vec(tex, uv, repeat_u, repeat_v, window, 3))
+
+# previously - ti.real_func
+@ti.func
+def sample_hermite_rgb_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_hermite_repeat_y_vec(tex, uv, repeat_u, repeat_v, window, 3))
 
 
 # previously - ti.real_func
 @ti.func
-def sample_hermite_rgba_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_hermite_repeat_vec(tex, uv, repeat_w, repeat_h, window, 4))
+def sample_hermite_rgba_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_hermite_repeat_vec(tex, uv, repeat_u, repeat_v, window, 4))
 
 # previously - ti.real_func
 @ti.func
-def sample_hermite_rgba_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_hermite_clamp_vec(tex, uv, repeat_w, repeat_h, window, 4))
+def sample_hermite_rgba_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_hermite_clamp_vec(tex, uv, repeat_u, repeat_v, window, 4))
 
 # previously - ti.real_func
 @ti.func
-def sample_hermite_rgba_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_hermite_repeat_x_vec(tex, uv, repeat_w, repeat_h, window, 4))
+def sample_hermite_rgba_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_hermite_repeat_x_vec(tex, uv, repeat_u, repeat_v, window, 4))
 
 # previously - ti.real_func
 @ti.func
-def sample_hermite_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_hermite_repeat_y_vec(tex, uv, repeat_w, repeat_h, window, 4))
+def sample_hermite_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_hermite_repeat_y_vec(tex, uv, repeat_u, repeat_v, window, 4))
 
 
 @ti.func
-def sample_b_spline_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
+def sample_b_spline_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -1349,12 +1349,12 @@ def sample_b_spline_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repe
     return out
 
 @ti.func
-def sample_b_spline_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
+def sample_b_spline_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -1400,14 +1400,14 @@ def sample_b_spline_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
     return out
 
 @ti.func
-def sample_b_spline_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
+def sample_b_spline_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -1459,14 +1459,14 @@ def sample_b_spline_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repea
     return out
 
 @ti.func
-def sample_b_spline_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
+def sample_b_spline_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -1515,14 +1515,14 @@ def sample_b_spline_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, rep
     return out
 
 @ti.func
-def sample_b_spline_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
+def sample_b_spline_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -1574,14 +1574,14 @@ def sample_b_spline_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
     return out
 
 @ti.func
-def sample_b_spline_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
+def sample_b_spline_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -1630,14 +1630,14 @@ def sample_b_spline_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, 
     return out
 
 @ti.func
-def sample_b_spline_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int):
+def sample_b_spline_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, n:int):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
@@ -1688,14 +1688,14 @@ def sample_b_spline_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, re
     return out
 
 @ti.func
-def sample_b_spline_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
+def sample_b_spline_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
@@ -1750,21 +1750,21 @@ def sample_indexed_b_spline(
     uv:tm.vec2, 
     idx:int,
     wrap_mode:int, 
-    repeat_w:int, 
-    repeat_h:int, 
+    repeat_u:int, 
+    repeat_v:int, 
     window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
 
     ix, iy = tm.ivec4(0), tm.ivec4(0)
     dxdy = tm.vec2(0.)
     if wrap_mode == WrapMode.CLAMP:
-        ix, iy, dxdy = dxdy_cubic_clamp(uv, width, height, repeat_w, repeat_h)
+        ix, iy, dxdy = dxdy_cubic_clamp(uv, width, height, repeat_u, repeat_v)
     elif wrap_mode == WrapMode.REPEAT:
-        ix, iy, dxdy = dxdy_cubic_repeat(uv, width, height, repeat_w, repeat_h)
+        ix, iy, dxdy = dxdy_cubic_repeat(uv, width, height, repeat_u, repeat_v)
     elif wrap_mode == WrapMode.REPEAT_X:
-        ix, iy, dxdy = dxdy_cubic_repeat_x(uv, width, height, repeat_w, repeat_h)
+        ix, iy, dxdy = dxdy_cubic_repeat_x(uv, width, height, repeat_u, repeat_v)
     elif wrap_mode == WrapMode.REPEAT_Y:
-        ix, iy, dxdy = dxdy_cubic_repeat_y(uv, width, height, repeat_w, repeat_h)
+        ix, iy, dxdy = dxdy_cubic_repeat_y(uv, width, height, repeat_u, repeat_v)
 
     xofs, yofs = int(window.x), int(window.y)
 
@@ -1812,97 +1812,97 @@ def sample_indexed_b_spline(
 
 # previously - ti.real_func
 @ti.func
-def sample_b_spline_r_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_b_spline_repeat_float(tex, uv, repeat_w, repeat_h, window)
+def sample_b_spline_r_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_b_spline_repeat_float(tex, uv, repeat_u, repeat_v, window)
 
 # previously - ti.real_func
 @ti.func
-def sample_b_spline_r_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_b_spline_clamp_float(tex, uv, repeat_w, repeat_h, window)
+def sample_b_spline_r_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_b_spline_clamp_float(tex, uv, repeat_u, repeat_v, window)
 
 # previously - ti.real_func
 @ti.func
-def sample_b_spline_r_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_b_spline_repeat_x_float(tex, uv, repeat_w, repeat_h, window)
+def sample_b_spline_r_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_b_spline_repeat_x_float(tex, uv, repeat_u, repeat_v, window)
 
 # previously - ti.real_func
 @ti.func
-def sample_b_spline_r_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_b_spline_repeat_y_float(tex, uv, repeat_w, repeat_h, window)
-
-
-
-# previously - ti.real_func
-@ti.func
-def sample_b_spline_rg_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_b_spline_repeat_vec(tex, uv, repeat_w, repeat_h, window, 2))
-
-# previously - ti.real_func
-@ti.func
-def sample_b_spline_rg_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_b_spline_clamp_vec(tex, uv, repeat_w, repeat_h, window, 2))
-
-# previously - ti.real_func
-@ti.func
-def sample_b_spline_rg_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_b_spline_repeat_x_vec(tex, uv, repeat_w, repeat_h, window, 2))
-
-# previously - ti.real_func
-@ti.func
-def sample_b_spline_rg_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_b_spline_repeat_y_vec(tex, uv, repeat_w, repeat_h, window, 2))
+def sample_b_spline_r_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_b_spline_repeat_y_float(tex, uv, repeat_u, repeat_v, window)
 
 
 
 # previously - ti.real_func
 @ti.func
-def sample_b_spline_rgb_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_b_spline_repeat_vec(tex, uv, repeat_w, repeat_h, window, 3))
+def sample_b_spline_rg_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_b_spline_repeat_vec(tex, uv, repeat_u, repeat_v, window, 2))
 
 # previously - ti.real_func
 @ti.func
-def sample_b_spline_rgb_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_b_spline_clamp_vec(tex, uv, repeat_w, repeat_h, window, 3))
+def sample_b_spline_rg_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_b_spline_clamp_vec(tex, uv, repeat_u, repeat_v, window, 2))
 
 # previously - ti.real_func
 @ti.func
-def sample_b_spline_rgb_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_b_spline_repeat_x_vec(tex, uv, repeat_w, repeat_h, window, 3))
+def sample_b_spline_rg_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_b_spline_repeat_x_vec(tex, uv, repeat_u, repeat_v, window, 2))
 
 # previously - ti.real_func
 @ti.func
-def sample_b_spline_rgb_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_b_spline_repeat_y_vec(tex, uv, repeat_w, repeat_h, window, 3))
+def sample_b_spline_rg_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_b_spline_repeat_y_vec(tex, uv, repeat_u, repeat_v, window, 2))
+
+
+
+# previously - ti.real_func
+@ti.func
+def sample_b_spline_rgb_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_b_spline_repeat_vec(tex, uv, repeat_u, repeat_v, window, 3))
+
+# previously - ti.real_func
+@ti.func
+def sample_b_spline_rgb_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_b_spline_clamp_vec(tex, uv, repeat_u, repeat_v, window, 3))
+
+# previously - ti.real_func
+@ti.func
+def sample_b_spline_rgb_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_b_spline_repeat_x_vec(tex, uv, repeat_u, repeat_v, window, 3))
+
+# previously - ti.real_func
+@ti.func
+def sample_b_spline_rgb_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_b_spline_repeat_y_vec(tex, uv, repeat_u, repeat_v, window, 3))
 
 
 # previously - ti.real_func
 @ti.func
-def sample_b_spline_rgba_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_b_spline_repeat_vec(tex, uv, repeat_w, repeat_h, window, 4))
+def sample_b_spline_rgba_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_b_spline_repeat_vec(tex, uv, repeat_u, repeat_v, window, 4))
 
 # previously - ti.real_func
 @ti.func
-def sample_b_spline_rgba_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_b_spline_clamp_vec(tex, uv, repeat_w, repeat_h, window, 4))
+def sample_b_spline_rgba_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_b_spline_clamp_vec(tex, uv, repeat_u, repeat_v, window, 4))
 
 # previously - ti.real_func
 @ti.func
-def sample_b_spline_rgba_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_b_spline_repeat_x_vec(tex, uv, repeat_w, repeat_h, window, 4))
+def sample_b_spline_rgba_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_b_spline_repeat_x_vec(tex, uv, repeat_u, repeat_v, window, 4))
 
 # previously - ti.real_func
 @ti.func
-def sample_b_spline_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_b_spline_repeat_y_vec(tex, uv, repeat_w, repeat_h, window, 4))
+def sample_b_spline_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_b_spline_repeat_y_vec(tex, uv, repeat_u, repeat_v, window, 4))
 
 
 @ti.func
-def sample_mitchell_netravali_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int, b:float, c:float):
+def sample_mitchell_netravali_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, n:int, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -1950,12 +1950,12 @@ def sample_mitchell_netravali_repeat_vec(tex:ti.template(), uv:tm.vec2, repeat_w
     return out
 
 @ti.func
-def sample_mitchell_netravali_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float):
+def sample_mitchell_netravali_repeat_float(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -2001,14 +2001,14 @@ def sample_mitchell_netravali_repeat_float(tex:ti.template(), uv:tm.vec2, repeat
     return out
 
 @ti.func
-def sample_mitchell_netravali_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int, b:float, c:float):
+def sample_mitchell_netravali_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, n:int, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -2059,14 +2059,14 @@ def sample_mitchell_netravali_clamp_vec(tex:ti.template(), uv:tm.vec2, repeat_w:
     return out
 
 @ti.func
-def sample_mitchell_netravali_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float):
+def sample_mitchell_netravali_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -2115,14 +2115,14 @@ def sample_mitchell_netravali_clamp_float(tex:ti.template(), uv:tm.vec2, repeat_
     return out
 
 @ti.func
-def sample_mitchell_netravali_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int, b:float, c:float):
+def sample_mitchell_netravali_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, n:int, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -2174,14 +2174,14 @@ def sample_mitchell_netravali_repeat_x_vec(tex:ti.template(), uv:tm.vec2, repeat
     return out
 
 @ti.func
-def sample_mitchell_netravali_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float):
+def sample_mitchell_netravali_repeat_x_float(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -2230,14 +2230,14 @@ def sample_mitchell_netravali_repeat_x_float(tex:ti.template(), uv:tm.vec2, repe
     return out
 
 @ti.func
-def sample_mitchell_netravali_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, n:int, b:float, c:float):
+def sample_mitchell_netravali_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, n:int, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
@@ -2288,14 +2288,14 @@ def sample_mitchell_netravali_repeat_y_vec(tex:ti.template(), uv:tm.vec2, repeat
     return out
 
 @ti.func
-def sample_mitchell_netravali_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float):
+def sample_mitchell_netravali_repeat_y_float(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
     pos = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
@@ -2345,88 +2345,88 @@ def sample_mitchell_netravali_repeat_y_float(tex:ti.template(), uv:tm.vec2, repe
 
 # previously - ti.real_func
 @ti.func
-def sample_mitchell_netravali_r_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> float:
-    return sample_mitchell_netravali_repeat_float(tex, uv, repeat_w, repeat_h, window, b, c)
+def sample_mitchell_netravali_r_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> float:
+    return sample_mitchell_netravali_repeat_float(tex, uv, repeat_u, repeat_v, window, b, c)
 
 # previously - ti.real_func
 @ti.func
-def sample_mitchell_netravali_r_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> float:
-    return sample_mitchell_netravali_clamp_float(tex, uv, repeat_w, repeat_h, window, b, c)
+def sample_mitchell_netravali_r_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> float:
+    return sample_mitchell_netravali_clamp_float(tex, uv, repeat_u, repeat_v, window, b, c)
 
 # previously - ti.real_func
 @ti.func
-def sample_mitchell_netravali_r_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> float:
-    return sample_mitchell_netravali_repeat_x_float(tex, uv, repeat_w, repeat_h, window, b, c)
+def sample_mitchell_netravali_r_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> float:
+    return sample_mitchell_netravali_repeat_x_float(tex, uv, repeat_u, repeat_v, window, b, c)
 
 # previously - ti.real_func
 @ti.func
-def sample_mitchell_netravali_r_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> float:
-    return sample_mitchell_netravali_repeat_y_float(tex, uv, repeat_w, repeat_h, window, b, c)
-
-
-
-# previously - ti.real_func
-@ti.func
-def sample_mitchell_netravali_rg_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> tm.vec2:
-    return tm.vec2(sample_mitchell_netravali_repeat_vec(tex, uv, repeat_w, repeat_h, window, 2, b, c))
-
-# previously - ti.real_func
-@ti.func
-def sample_mitchell_netravali_rg_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> tm.vec2:
-    return tm.vec2(sample_mitchell_netravali_clamp_vec(tex, uv, repeat_w, repeat_h, window, 2, b, c))
-
-# previously - ti.real_func
-@ti.func
-def sample_mitchell_netravali_rg_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> tm.vec2:
-    return tm.vec2(sample_mitchell_netravali_repeat_x_vec(tex, uv, repeat_w, repeat_h, window, 2, b, c))
-
-# previously - ti.real_func
-@ti.func
-def sample_mitchell_netravali_rg_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> tm.vec2:
-    return tm.vec2(sample_mitchell_netravali_repeat_y_vec(tex, uv, repeat_w, repeat_h, window, 2, b, c))
+def sample_mitchell_netravali_r_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> float:
+    return sample_mitchell_netravali_repeat_y_float(tex, uv, repeat_u, repeat_v, window, b, c)
 
 
 
 # previously - ti.real_func
 @ti.func
-def sample_mitchell_netravali_rgb_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> tm.vec3:
-    return tm.vec3(sample_mitchell_netravali_repeat_vec(tex, uv, repeat_w, repeat_h, window, 3, b, c))
+def sample_mitchell_netravali_rg_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> tm.vec2:
+    return tm.vec2(sample_mitchell_netravali_repeat_vec(tex, uv, repeat_u, repeat_v, window, 2, b, c))
 
 # previously - ti.real_func
 @ti.func
-def sample_mitchell_netravali_rgb_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> tm.vec3:
-    return tm.vec3(sample_mitchell_netravali_clamp_vec(tex, uv, repeat_w, repeat_h, window, 3, b, c))
+def sample_mitchell_netravali_rg_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> tm.vec2:
+    return tm.vec2(sample_mitchell_netravali_clamp_vec(tex, uv, repeat_u, repeat_v, window, 2, b, c))
 
 # previously - ti.real_func
 @ti.func
-def sample_mitchell_netravali_rgb_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> tm.vec3:
-    return tm.vec3(sample_mitchell_netravali_repeat_x_vec(tex, uv, repeat_w, repeat_h, window, 3, b, c))
+def sample_mitchell_netravali_rg_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> tm.vec2:
+    return tm.vec2(sample_mitchell_netravali_repeat_x_vec(tex, uv, repeat_u, repeat_v, window, 2, b, c))
 
 # previously - ti.real_func
 @ti.func
-def sample_mitchell_netravali_rgb_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> tm.vec3:
-    return tm.vec3(sample_mitchell_netravali_repeat_y_vec(tex, uv, repeat_w, repeat_h, window, 3, b, c))
+def sample_mitchell_netravali_rg_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> tm.vec2:
+    return tm.vec2(sample_mitchell_netravali_repeat_y_vec(tex, uv, repeat_u, repeat_v, window, 2, b, c))
+
+
+
+# previously - ti.real_func
+@ti.func
+def sample_mitchell_netravali_rgb_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> tm.vec3:
+    return tm.vec3(sample_mitchell_netravali_repeat_vec(tex, uv, repeat_u, repeat_v, window, 3, b, c))
+
+# previously - ti.real_func
+@ti.func
+def sample_mitchell_netravali_rgb_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> tm.vec3:
+    return tm.vec3(sample_mitchell_netravali_clamp_vec(tex, uv, repeat_u, repeat_v, window, 3, b, c))
+
+# previously - ti.real_func
+@ti.func
+def sample_mitchell_netravali_rgb_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> tm.vec3:
+    return tm.vec3(sample_mitchell_netravali_repeat_x_vec(tex, uv, repeat_u, repeat_v, window, 3, b, c))
+
+# previously - ti.real_func
+@ti.func
+def sample_mitchell_netravali_rgb_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> tm.vec3:
+    return tm.vec3(sample_mitchell_netravali_repeat_y_vec(tex, uv, repeat_u, repeat_v, window, 3, b, c))
 
 
 # previously - ti.real_func
 @ti.func
-def sample_mitchell_netravali_rgba_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> tm.vec4:
-    return tm.vec4(sample_mitchell_netravali_repeat_vec(tex, uv, repeat_w, repeat_h, window, 4, b, c))
+def sample_mitchell_netravali_rgba_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> tm.vec4:
+    return tm.vec4(sample_mitchell_netravali_repeat_vec(tex, uv, repeat_u, repeat_v, window, 4, b, c))
 
 # previously - ti.real_func
 @ti.func
-def sample_mitchell_netravali_rgba_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> tm.vec4:
-    return tm.vec4(sample_mitchell_netravali_clamp_vec(tex, uv, repeat_w, repeat_h, window, 4, b, c))
+def sample_mitchell_netravali_rgba_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> tm.vec4:
+    return tm.vec4(sample_mitchell_netravali_clamp_vec(tex, uv, repeat_u, repeat_v, window, 4, b, c))
 
 # previously - ti.real_func
 @ti.func
-def sample_mitchell_netravali_rgba_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> tm.vec4:
-    return tm.vec4(sample_mitchell_netravali_repeat_x_vec(tex, uv, repeat_w, repeat_h, window, 4, b, c))
+def sample_mitchell_netravali_rgba_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> tm.vec4:
+    return tm.vec4(sample_mitchell_netravali_repeat_x_vec(tex, uv, repeat_u, repeat_v, window, 4, b, c))
 
 # previously - ti.real_func
 @ti.func
-def sample_mitchell_netravali_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4, b:float, c:float) -> tm.vec4:
-    return tm.vec4(sample_mitchell_netravali_repeat_y_vec(tex, uv, repeat_w, repeat_h, window, 4, b, c))
+def sample_mitchell_netravali_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4, b:float, c:float) -> tm.vec4:
+    return tm.vec4(sample_mitchell_netravali_repeat_y_vec(tex, uv, repeat_u, repeat_v, window, 4, b, c))
 
 
 
@@ -2438,156 +2438,156 @@ def sample_mitchell_netravali_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repea
 def sample_nn_repeat(
     tex:ti.template(), 
     uv:tm.vec2, 
-    repeat_w:int, 
-    repeat_h:int,  
+    repeat_u:int, 
+    repeat_v:int,  
     window:tm.ivec4) -> ti.template():
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = uv
     x, y = 0, 0
     uvb.x = uv.x % 1.
     uvb.y = uv.y % 1.
-    x = int(window.x + ((uvb.x * float(width * repeat_w)) % width))
-    y = int(window.y + ((uvb.y * float(height * repeat_h)) % height))    
+    x = int(window.x + ((uvb.x * float(width * repeat_u)) % width))
+    y = int(window.y + ((uvb.y * float(height * repeat_v)) % height))    
     return tex[y, x]
 
 @ti.func
 def sample_nn_clamp(
     tex:ti.template(), 
     uv:tm.vec2, 
-    repeat_w:int, 
-    repeat_h:int,  
+    repeat_u:int, 
+    repeat_v:int,  
     window:tm.ivec4) -> ti.template():
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = uv
     x, y = 0, 0
     uvb.x = tm.clamp(uv.x, 0., 1. - (0.5 / width)) 
     uvb.y = tm.clamp(uv.y, 0., 1. - (0.5 / height))
-    x = int(window.x + ((uvb.x * float(width * repeat_w)) % width))
-    y = int(window.y + ((uvb.y * float(height * repeat_h)) % height))    
+    x = int(window.x + ((uvb.x * float(width * repeat_u)) % width))
+    y = int(window.y + ((uvb.y * float(height * repeat_v)) % height))    
     return tex[y, x]
 
 @ti.func
 def sample_nn_repeat_x(
     tex:ti.template(), 
     uv:tm.vec2, 
-    repeat_w:int, 
-    repeat_h:int,  
+    repeat_u:int, 
+    repeat_v:int,  
     window:tm.ivec4) -> ti.template():
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = uv
     x, y = 0, 0
     uvb.x = uv.x % 1.
     uvb.y = tm.clamp(uv.y, 0., 1. - (0.5 / height))
-    x = int(window.x + ((uvb.x * float(width * repeat_w)) % width))
-    y = int(window.y + ((uvb.y * float(height * repeat_h)) % height))    
+    x = int(window.x + ((uvb.x * float(width * repeat_u)) % width))
+    y = int(window.y + ((uvb.y * float(height * repeat_v)) % height))    
     return tex[y, x]
 
 @ti.func
 def sample_nn_repeat_y(
     tex:ti.template(), 
     uv:tm.vec2, 
-    repeat_w:int, 
-    repeat_h:int,  
+    repeat_u:int, 
+    repeat_v:int,  
     window:tm.ivec4) -> ti.template():
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = uv
     x, y = 0, 0
     uvb.x = tm.clamp(uv.x, 0., 1. - (0.5 / width)) 
     uvb.y = uv.y % 1.
-    x = int(window.x + ((uvb.x * float(width * repeat_w)) % width))
-    y = int(window.y + ((uvb.y * float(height * repeat_h)) % height))    
+    x = int(window.x + ((uvb.x * float(width * repeat_u)) % width))
+    y = int(window.y + ((uvb.y * float(height * repeat_v)) % height))    
     return tex[y, x]
 
 
 # previously - ti.real_func
 @ti.func
-def sample_nn_r_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_nn_repeat(tex, uv, repeat_w, repeat_h, window)
+def sample_nn_r_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_nn_repeat(tex, uv, repeat_u, repeat_v, window)
 
 # previously - ti.real_func
 @ti.func
-def sample_nn_r_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_nn_clamp(tex, uv, repeat_w, repeat_h, window)
+def sample_nn_r_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_nn_clamp(tex, uv, repeat_u, repeat_v, window)
 
 # previously - ti.real_func
 @ti.func
-def sample_nn_r_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_nn_repeat_x(tex, uv, repeat_w, repeat_h, window)
+def sample_nn_r_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_nn_repeat_x(tex, uv, repeat_u, repeat_v, window)
 
 # previously - ti.real_func
 @ti.func
-def sample_nn_r_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_nn_repeat_y(tex, uv, repeat_w, repeat_h, window)
-
-
-
-# previously - ti.real_func
-@ti.func
-def sample_nn_rg_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_nn_repeat(tex, uv, repeat_w, repeat_h, window))
-
-# previously - ti.real_func
-@ti.func
-def sample_nn_rg_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_nn_clamp(tex, uv, repeat_w, repeat_h, window))
-
-# previously - ti.real_func
-@ti.func
-def sample_nn_rg_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_nn_repeat_x(tex, uv, repeat_w, repeat_h, window))
-
-# previously - ti.real_func
-@ti.func
-def sample_nn_rg_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_nn_repeat_y(tex, uv, repeat_w, repeat_h, window))
+def sample_nn_r_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_nn_repeat_y(tex, uv, repeat_u, repeat_v, window)
 
 
 
 # previously - ti.real_func
 @ti.func
-def sample_nn_rgb_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_nn_repeat(tex, uv, repeat_w, repeat_h, window))
+def sample_nn_rg_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_nn_repeat(tex, uv, repeat_u, repeat_v, window))
 
 # previously - ti.real_func
 @ti.func
-def sample_nn_rgb_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_nn_clamp(tex, uv, repeat_w, repeat_h, window))
+def sample_nn_rg_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_nn_clamp(tex, uv, repeat_u, repeat_v, window))
 
 # previously - ti.real_func
 @ti.func
-def sample_nn_rgb_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_nn_repeat_x(tex, uv, repeat_w, repeat_h, window))
+def sample_nn_rg_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_nn_repeat_x(tex, uv, repeat_u, repeat_v, window))
 
 # previously - ti.real_func
 @ti.func
-def sample_nn_rgb_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_nn_repeat_y(tex, uv, repeat_w, repeat_h, window))
+def sample_nn_rg_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_nn_repeat_y(tex, uv, repeat_u, repeat_v, window))
+
+
+
+# previously - ti.real_func
+@ti.func
+def sample_nn_rgb_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_nn_repeat(tex, uv, repeat_u, repeat_v, window))
+
+# previously - ti.real_func
+@ti.func
+def sample_nn_rgb_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_nn_clamp(tex, uv, repeat_u, repeat_v, window))
+
+# previously - ti.real_func
+@ti.func
+def sample_nn_rgb_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_nn_repeat_x(tex, uv, repeat_u, repeat_v, window))
+
+# previously - ti.real_func
+@ti.func
+def sample_nn_rgb_repeat_y(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_nn_repeat_y(tex, uv, repeat_u, repeat_v, window))
 
 
 # previously - ti.real_func
 @ti.func
-def sample_nn_rgba_repeat(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_nn_repeat(tex, uv, repeat_w, repeat_h, window))
+def sample_nn_rgba_repeat(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_nn_repeat(tex, uv, repeat_u, repeat_v, window))
 
 # previously - ti.real_func
 @ti.func
-def sample_nn_rgba_clamp(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_nn_clamp(tex, uv, repeat_w, repeat_h, window))
+def sample_nn_rgba_clamp(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_nn_clamp(tex, uv, repeat_u, repeat_v, window))
 
 # previously - ti.real_func
 @ti.func
-def sample_nn_rgba_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_nn_repeat_x(tex, uv, repeat_w, repeat_h, window))
+def sample_nn_rgba_repeat_x(tex:ti.template(),uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_nn_repeat_x(tex, uv, repeat_u, repeat_v, window))
 
 # previously - ti.real_func
 @ti.func
-def sample_nn_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_nn_repeat_y(tex, uv, repeat_w, repeat_h, window))
+def sample_nn_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_nn_repeat_y(tex, uv, repeat_u, repeat_v, window))
 
 @ti.func
-def sample_bilinear_repeat(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
+def sample_bilinear_repeat(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y) 
-    uvb = (uv * tm.vec2(repeat_w, repeat_h)) % 1.
+    uvb = (uv * tm.vec2(repeat_u, repeat_v)) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = (pos.y - 0.5) % height
@@ -2607,13 +2607,13 @@ def sample_bilinear_repeat(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h
     return out
 
 @ti.func
-def sample_bilinear_clamp(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
+def sample_bilinear_clamp(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hp = tm.vec2(0.5 / width, 0.5 / height)
     eps = 1e-7
     uvb = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hp.x, 1. - hp.x)
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hp.y, 1. - hp.y)
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hp.x, 1. - hp.x)
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hp.y, 1. - hp.y)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.) 
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -2633,13 +2633,13 @@ def sample_bilinear_clamp(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:
     return out
 
 @ti.func
-def sample_bilinear_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
+def sample_bilinear_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hpy = 0.5 / height
     eps = 1e-7
     uvb = tm.vec2(0.)
-    uvb.x = (uv.x * repeat_w) % 1.
-    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_h) % 1., hpy, 1. - hpy)
+    uvb.x = (uv.x * repeat_u) % 1.
+    uvb.y = tm.clamp((tm.clamp(uv.y, 0., 1. - eps) * repeat_v) % 1., hpy, 1. - hpy)
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = (pos.x - 0.5) % width
     pos.y = tm.clamp(pos.y - 0.5, 0., height - 1.)
@@ -2659,13 +2659,13 @@ def sample_bilinear_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat
     return out
 
 @ti.func
-def sample_bilinear_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4):
+def sample_bilinear_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     hpx = 0.5 / width
     eps = 1e-7
     uvb = tm.vec2(0.)
-    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_w) % 1., hpx, 1. - hpx)
-    uvb.y = (uv.y * repeat_h) % 1.
+    uvb.x = tm.clamp((tm.clamp(uv.x, 0., 1. - eps) * repeat_u) % 1., hpx, 1. - hpx)
+    uvb.y = (uv.y * repeat_v) % 1.
     pos = tm.vec2(uvb.x * width, uvb.y * height)
     pos.x = tm.clamp(pos.x - 0.5, 0., width - 1.)
     pos.y = (pos.y - 0.5) % height
@@ -2687,86 +2687,86 @@ def sample_bilinear_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat
 
 # previously - ti.real_func
 @ti.func
-def sample_bilinear_r_repeat(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_bilinear_repeat(tex, uv, repeat_w, repeat_h, window)
+def sample_bilinear_r_repeat(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_bilinear_repeat(tex, uv, repeat_u, repeat_v, window)
 
 # previously - ti.real_func
 @ti.func
-def sample_bilinear_r_clamp(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_bilinear_clamp(tex, uv, repeat_w, repeat_h, window)
+def sample_bilinear_r_clamp(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_bilinear_clamp(tex, uv, repeat_u, repeat_v, window)
 
 # previously - ti.real_func
 @ti.func
-def sample_bilinear_r_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_bilinear_repeat_x(tex, uv, repeat_w, repeat_h, window)
+def sample_bilinear_r_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_bilinear_repeat_x(tex, uv, repeat_u, repeat_v, window)
 
 # previously - ti.real_func
 @ti.func
-def sample_bilinear_r_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> float:
-    return sample_bilinear_repeat_y(tex, uv, repeat_w, repeat_h, window)
-
-
-# previously - ti.real_func
-@ti.func
-def sample_bilinear_rg_repeat(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_bilinear_repeat(tex, uv, repeat_w, repeat_h, window))
-
-# previously - ti.real_func
-@ti.func
-def sample_bilinear_rg_clamp(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_bilinear_clamp(tex, uv, repeat_w, repeat_h, window))
-
-# previously - ti.real_func
-@ti.func
-def sample_bilinear_rg_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_bilinear_repeat_x(tex, uv, repeat_w, repeat_h, window))
-
-# previously - ti.real_func
-@ti.func
-def sample_bilinear_rg_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec2:
-    return tm.vec2(sample_bilinear_repeat_y(tex, uv, repeat_w, repeat_h, window))
+def sample_bilinear_r_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> float:
+    return sample_bilinear_repeat_y(tex, uv, repeat_u, repeat_v, window)
 
 
 # previously - ti.real_func
 @ti.func
-def sample_bilinear_rgb_repeat(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_bilinear_repeat(tex, uv, repeat_w, repeat_h, window))
+def sample_bilinear_rg_repeat(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_bilinear_repeat(tex, uv, repeat_u, repeat_v, window))
 
 # previously - ti.real_func
 @ti.func
-def sample_bilinear_rgb_clamp(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_bilinear_clamp(tex, uv, repeat_w, repeat_h, window))
+def sample_bilinear_rg_clamp(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_bilinear_clamp(tex, uv, repeat_u, repeat_v, window))
 
 # previously - ti.real_func
 @ti.func
-def sample_bilinear_rgb_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_bilinear_repeat_x(tex, uv, repeat_w, repeat_h, window))
+def sample_bilinear_rg_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_bilinear_repeat_x(tex, uv, repeat_u, repeat_v, window))
 
 # previously - ti.real_func
 @ti.func
-def sample_bilinear_rgb_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec3:
-    return tm.vec3(sample_bilinear_repeat_y(tex, uv, repeat_w, repeat_h, window))
+def sample_bilinear_rg_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec2:
+    return tm.vec2(sample_bilinear_repeat_y(tex, uv, repeat_u, repeat_v, window))
 
 
 # previously - ti.real_func
 @ti.func
-def sample_bilinear_rgba_repeat(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_bilinear_repeat(tex, uv, repeat_w, repeat_h, window))
+def sample_bilinear_rgb_repeat(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_bilinear_repeat(tex, uv, repeat_u, repeat_v, window))
 
 # previously - ti.real_func
 @ti.func
-def sample_bilinear_rgba_clamp(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_bilinear_clamp(tex, uv, repeat_w, repeat_h, window))
+def sample_bilinear_rgb_clamp(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_bilinear_clamp(tex, uv, repeat_u, repeat_v, window))
 
 # previously - ti.real_func
 @ti.func
-def sample_bilinear_rgba_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_bilinear_repeat_x(tex, uv, repeat_w, repeat_h, window))
+def sample_bilinear_rgb_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_bilinear_repeat_x(tex, uv, repeat_u, repeat_v, window))
 
 # previously - ti.real_func
 @ti.func
-def sample_bilinear_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_w:int, repeat_h:int, window:tm.ivec4) -> tm.vec4:
-    return tm.vec4(sample_bilinear_repeat_y(tex, uv, repeat_w, repeat_h, window))
+def sample_bilinear_rgb_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec3:
+    return tm.vec3(sample_bilinear_repeat_y(tex, uv, repeat_u, repeat_v, window))
+
+
+# previously - ti.real_func
+@ti.func
+def sample_bilinear_rgba_repeat(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_bilinear_repeat(tex, uv, repeat_u, repeat_v, window))
+
+# previously - ti.real_func
+@ti.func
+def sample_bilinear_rgba_clamp(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_bilinear_clamp(tex, uv, repeat_u, repeat_v, window))
+
+# previously - ti.real_func
+@ti.func
+def sample_bilinear_rgba_repeat_x(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_bilinear_repeat_x(tex, uv, repeat_u, repeat_v, window))
+
+# previously - ti.real_func
+@ti.func
+def sample_bilinear_rgba_repeat_y(tex:ti.template(), uv:tm.vec2, repeat_u:int, repeat_v:int, window:tm.ivec4) -> tm.vec4:
+    return tm.vec4(sample_bilinear_repeat_y(tex, uv, repeat_u, repeat_v, window))
 
 
 
@@ -2776,8 +2776,8 @@ def sample_indexed_bilinear(
     uv:tm.vec2, 
     idx:int,
     wrap_mode:int, 
-    repeat_w:int, 
-    repeat_h:int, 
+    repeat_u:int, 
+    repeat_v:int, 
     window:tm.ivec4):
     width, height = int(window.z - window.x), int(window.w - window.y)
     uvb = tm.vec2(0.)
@@ -2785,13 +2785,13 @@ def sample_indexed_bilinear(
     xy = tm.ivec4(0)
     dxdy = tm.vec2(0.)
     if wrap_mode == WrapMode.CLAMP:
-        xy, dxdy = dxdy_bilinear_clamp(uv, width, height, repeat_w, repeat_h)
+        xy, dxdy = dxdy_bilinear_clamp(uv, width, height, repeat_u, repeat_v)
     elif wrap_mode == WrapMode.REPEAT:
-        xy, dxdy = dxdy_bilinear_repeat(uv, width, height, repeat_w, repeat_h)
+        xy, dxdy = dxdy_bilinear_repeat(uv, width, height, repeat_u, repeat_v)
     elif wrap_mode == WrapMode.REPEAT_X:
-        xy, dxdy = dxdy_bilinear_repeat_x(uv, width, height, repeat_w, repeat_h)
+        xy, dxdy = dxdy_bilinear_repeat_x(uv, width, height, repeat_u, repeat_v)
     elif wrap_mode == WrapMode.REPEAT_Y:
-        xy, dxdy = dxdy_bilinear_repeat_y(uv, width, height, repeat_w, repeat_h)
+        xy, dxdy = dxdy_bilinear_repeat_y(uv, width, height, repeat_u, repeat_v)
 
     xofs, yofs = int(window.x), int(window.y)
     q00 = tex[idx, yofs + xy.y, xofs + xy.x] 
