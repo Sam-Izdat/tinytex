@@ -87,7 +87,7 @@ def prep_2d_rgba(val:torch.Tensor, flip_y:bool = False):
     if flip_y: val = torch.flip(val, dims=[0])
     return val.float()
 
-def count_channels(im:torch.Tensor):
+def count_channels_2d(im:torch.Tensor):
     channels = 0
     if   isinstance(im, float): channels = 1
     elif isinstance(im, torch.Tensor) and torch.is_floating_point(im):
@@ -101,7 +101,7 @@ def count_channels(im:torch.Tensor):
         elif len(im.shape) == 2 or (len(im.shape) == 3 and im.shape[0] == 1): channels = 1
         elif (len(im.shape) == 3 or len(im.shape) == 1) and im.shape[0] == 2: channels = 2
         elif (len(im.shape) == 3 or len(im.shape) == 1) and im.shape[0] == 3: channels = 3
-        elif (len(im.shape) == 3 or len(im.shape) == 0) and im.shape[0] == 4: channels = 4
+        elif (len(im.shape) == 3 or len(im.shape) == 1) and im.shape[0] == 4: channels = 4
     elif type(im) == ti.lang.matrix.Vector or type(im) == ti.lang.matrix.Matrix: 
         if   len(im) == 1: channels = 1
         elif len(im) == 2: channels = 2

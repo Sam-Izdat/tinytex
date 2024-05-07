@@ -44,7 +44,7 @@ class Texture2D:
             FC, FH, FW = self.channels, self.height, (int(self.width * 1.5) if self.generate_mips else self.width)
             if self.generate_mips: self.max_mip = FH.bit_length()
         else:
-            self.channels = count_channels(im)
+            self.channels = count_channels_2d(im)
 
             # prepare data for a ti field
             if self.channels == 1:      im = prep_2d_r(im, self.flip_y)
@@ -100,7 +100,7 @@ class Texture2D:
         :param im: Image data as [C, H, W] sized PyTorch tensor, NumPy array, Taichi vector or scalar value.
         :type im: torch.Tensor | numpy.ndarray | float | taichi.math.vec2 | taichi.math.vec3 | taichi.math.vec4
         """
-        assert self.channels == count_channels(im), f"image tensor must have {self.channels} channels; got {count_channels(im)}"
+        assert self.channels == count_channels_2d(im), f"image tensor must have {self.channels} channels; got {count_channels_2d(im)}"
         if self.channels == 1:      
             im = prep_2d_r(im, self.flip_y)
         elif self.channels == 2:    
