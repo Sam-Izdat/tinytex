@@ -19,20 +19,18 @@ class SDF:
     @classmethod
     def compute(cls, 
         im:torch.Tensor, 
-        tiling:bool=True, 
+        periodic:bool=True,
         length_factor:float=0.1, 
         threshold:float=None,
         tile_to:tuple=None) -> torch.Tensor:
         """Compute SDF from image."""
         H, W = im.shape[1:]
         if tile_to is not None: assert max(H, W) <= tile_to, err_tile
-        if threshold is not None: im = (im > threshold)
-        if tiling: im = Resampling.tile(im, (H*3, W*3))
+        if threshold is not None: im = (im > threshold).float()
         im = im[0,...].numpy()
         im_norm = im * 2. - 1.
-        distance = skfmm.distance(im_norm)
-        distance = cls.__scale_dist(torch.from_numpy(distance), (H*3 if tiling else H), (W*3 if tiling else W), length_factor)
-        if tiling: distance = distance[H:H*2,W:W*2]
+        distance = skfmm.distance(im_norm, periodic=periodic)
+        distance = cls.__scale_dist(torch.from_numpy(distance), H, W, length_factor)
         out = distance.clamp(0.,1.).unsqueeze(0)
         if tile_to is not None: out = Resampling.tile(out, (tile_to, tile_to))
         return out

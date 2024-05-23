@@ -4,7 +4,8 @@ tinytex
 Python texture sampling, processing and synthesis library for PyTorch-involved projects.
 
 This library is a hodgepodge of tangentially-related procedures useful for sampling, making and 
-modifying various kinds of textures. The primary input and output is PyTorch tensors. It provides:
+modifying various kinds of textures. The primary input and output is batched or unbatched 
+PyTorch image tensors. This library provides:
 
 - backend-agnostic 1D/2D/3D textures for Taichi (if installed with Taichi optional requirement)
     
@@ -12,7 +13,7 @@ modifying various kinds of textures. The primary input and output is PyTorch ten
   - convert textures to and from PyTorch tensors
   - sample textures with lower or higher-order interpolation/approximation
 
-- resampling/rescaling, cropping and padding
+- image resampling/rescaling, cropping and padding
 - tiling
 
   - split images into tiles 

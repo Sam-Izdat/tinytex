@@ -69,7 +69,7 @@ def filter_2d_cubic_hermite(p:tm.mat4, x:float, y:float) -> float:
     Cubic Hermite filter. Interpolates 4x4 point samples.
     
     :param p: 4x4 samples of interpolation.
-    :type p: taichi.math.vec4
+    :type p: taichi.math.mat4
     :param x: x-delta
     :param y: y-delta
     """
@@ -86,7 +86,7 @@ def filter_2d_cubic_b_spline(p:tm.mat4, x:float, y:float) -> float:
     Cubic B-spline filter. Approximates 4x4 point samples.
 
     :param p: 4x4 samples of approximation.
-    :type p: taichi.math.vec4
+    :type p: taichi.math.mat4
     :param x: x-delta
     :param y: y-delta
     """
@@ -103,7 +103,7 @@ def filter_2d_mitchell_netravali(p:tm.mat4, x:float, y:float, b:float, c:float) 
     Mitchell-Netravali/BC-spline filter. Interpolates/approximates 4x4 point samples.
 
     :param p: 4x4 samples of interpolation/approximation.
-    :type p: taichi.math.vec4
+    :type p: taichi.math.mat4
     :param x: x-delta
     :param y: y-delta
     :param b: BC-spline B-value.
