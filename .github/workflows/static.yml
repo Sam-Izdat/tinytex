@@ -30,18 +30,18 @@ jobs:
 
       - name: Build HTML docs
         run: make html
-        working-directory: ${{ github.workspace }}/docs
+        working-directory: ${{ github.workspace }}/doc
 
       - name: Build PDF docs
         run: |
           make latexpdf
           mv build/latex/*.pdf build/html/tinytex.pdf
-        working-directory: ${{ github.workspace }}/docs
+        working-directory: ${{ github.workspace }}/doc
 
       - name: Upload HTML artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ github.workspace }}/docs/build/html
+          path: ${{ github.workspace }}/doc/build/html
 
   deploy:
     needs: build_docs
