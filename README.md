@@ -1,4 +1,4 @@
-![tinytex](doc/images/tinytex_sm.png)
+![tinytex](https://raw.githubusercontent.com/Sam-Izdat/tinytex/main/doc/images/tinytex_sm.png)
 
 * [Project site & docs](https://sam-izdat.github.io/tinytex/) 
 * [PyPi](https://pypi.org/project/tinytex/)
