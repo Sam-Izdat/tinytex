@@ -48,24 +48,20 @@ Getting started
 
 About 
 -----
-Release version 
-|version|
-|release|
 
-.. rubric:: Requirements
+.. only:: html
 
-- PyTorch >=2.0 (earlier versions untested)
-- NumPy >=1.21
-- imageio >=2.9 (with PNG-FI FreeImage plugin)
-- tqdm >=4.64
-- toml >=0.10
-- tinycio >= 0.6.1
+    .. hlist::
+        :columns: 4
+    
+        * v |release|
+        * `PDF manual <./tinytex.pdf>`_
+        * `Previous versions <https://github.com/Sam-Izdat/tinytex/releases>`_
+        * :doc:`Release notes <source/about_release_notes>`
 
 .. rubric:: License
 
 :doc:`MIT License <source/license>` on all original code - see source for details
-
-
 
 Reference
 ---------
@@ -111,5 +107,5 @@ Sibling projects
     :caption: Sibling projects:
     :hidden:
 
-    tinytex <https://sam-izdat.github.io/tinycio/>
+    tinycio <https://sam-izdat.github.io/tinycio/>
     tinyfilm <https://sam-izdat.github.io/tinyfilm/>

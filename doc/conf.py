@@ -24,12 +24,11 @@ author = 'Sam Izdat'
 data = None
 version = '???'
 release = '???'
+
 with open('../pyproject.toml', 'r') as f:
     data = toml.load(f)
     version = data['project']['version']
-    release = data['tool']['tinytex_about']['release']
-
-
+    release = version + ' ' + data['tool']['tinytex_about']['release']
 
 # -- General configuration ---------------------------------------------------
 
