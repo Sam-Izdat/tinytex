@@ -28,20 +28,20 @@ jobs:
           pip install -r requirements.txt
           sudo apt-get update && sudo apt-get install -y latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended
 
-      - name: Build HTML docs
+       - name: Build HTML docs
         run: make html
-        working-directory: ${{ github.workspace }}/doc
+        working-directory: ${{ github.workspace }}
 
       - name: Build PDF docs
         run: |
           make latexpdf
-          mv build/latex/*.pdf build/html/tinytex.pdf
-        working-directory: ${{ github.workspace }}/doc
+          mv _build/latex/*.pdf _build/html/tinytex.pdf
+        working-directory: ${{ github.workspace }}
 
       - name: Upload HTML artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ github.workspace }}/doc/build/html
+          path: _build/html
 
   deploy:
     needs: build_docs
