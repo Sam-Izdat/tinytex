@@ -33,17 +33,7 @@ jobs:
 
       - name: Install Sphinx deps
         run: pip install sphinx sphinx_rtd_theme
-        
-      - name: Install LaTeX deps
-        run: sudo apt-get update && sudo apt-get install -y \
-          latexmk \
-          texlive-latex-base \
-          texlive-latex-recommended \
-          texlive-latex-extra \
-          texlive-fonts-recommended \
-          texlive-fonts-extra \
-          texlive-science \
-          texlive-xetex
+
       - name: Build HTML docs
         run: make html
         working-directory: ${{ github.workspace }}
