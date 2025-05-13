@@ -52,4 +52,4 @@ PyTorch image tensors. This library provides:
 * Run  `pip install tinytex`
 * Run  `ttex-setup` ([iio docs on fi](https://imageio.readthedocs.io/en/stable/_autosummary/imageio.plugins.freeimage.html#module-imageio.plugins.freeimage))
 
-[See the docs](https://sam-izdat.github.io/tinytex-docs/) for the rest.
+[See the docs](https://sam-izdat.github.io/tinytex/) for the rest.
