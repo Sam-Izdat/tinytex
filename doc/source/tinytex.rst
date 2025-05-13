@@ -10,12 +10,14 @@ API Reference
         Atlas
         Geometry
         Smoothstep
-        Noise
+        PRNG
+        SpectralNoise
+        SpatialNoise
+        Voronoi
         SDF
         Tiling
         Wavelet
         Warping
-        Diffraction
 
     .. autoclass:: Resampling
         :members:
@@ -33,7 +35,19 @@ API Reference
         :members:
         :show-inheritance:
 
-    .. autoclass:: Noise
+    .. autoclass:: PRNG
+        :members:
+        :show-inheritance:
+
+    .. autoclass:: SpectralNoise
+        :members:
+        :show-inheritance:
+
+    .. autoclass:: SpatialNoise
+        :members:
+        :show-inheritance:
+
+    .. autoclass:: Voronoi
         :members:
         :show-inheritance:
 
@@ -50,10 +64,6 @@ API Reference
         :show-inheritance:
 
     .. autoclass:: Warping
-        :members:
-        :show-inheritance:
-
-    .. autoclass:: Diffraction
         :members:
         :show-inheritance:
 

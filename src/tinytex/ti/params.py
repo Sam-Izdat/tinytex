@@ -107,14 +107,19 @@ class WrapMode(IntEnum):
           -
           - ✓
     """
-    REPEAT      = 1<<0
     CLAMP       = 1<<1
     REPEAT_X    = 1<<2
     REPEAT_Y    = 1<<3
     REPEAT_Z    = 1<<4
 
+    REPEAT_XY   = REPEAT_X | REPEAT_Y;
+    REPEAT_XZ   = REPEAT_X | REPEAT_Z;
+    REPEAT_YZ   = REPEAT_Y | REPEAT_Z;
+    REPEAT_XYZ  = REPEAT_X | REPEAT_Y | REPEAT_Z;
+    REPEAT      = REPEAT_XYZ;
+
     # TODO: MIRROR, etc
 
-    SUPPORTED_1D    = REPEAT | CLAMP | REPEAT_X
-    SUPPORTED_2D    = REPEAT | CLAMP | REPEAT_X | REPEAT_Y
-    SUPPORTED_3D    = REPEAT | CLAMP | REPEAT_X | REPEAT_Y | REPEAT_Z
+    SUPPORTED_1D    = CLAMP | REPEAT_X
+    SUPPORTED_2D    = CLAMP | REPEAT_XY
+    SUPPORTED_3D    = CLAMP | REPEAT_XYZ

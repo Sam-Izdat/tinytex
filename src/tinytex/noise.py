@@ -1,3 +1,7 @@
+from __future__ import annotations
+import typing
+from typing import Union
+
 import torch
 import numpy as np
 from scipy.spatial import cKDTree
@@ -7,9 +11,13 @@ from tinycio import MonoImage
 from .util import *
 from .smoothstep import Smoothstep
 
-class Noise:
 
-    """Procedural noise."""
+
+# SPATIAL-DOMAIN
+
+class SpatialNoise:
+
+    """Spatial-domain procedural noise generators."""
 
     err_hw_pot = "height and width must be power-of-two"
     err_density_zero = "density cannot be zero"
@@ -97,7 +105,15 @@ class Noise:
         density:float=5., 
         tileable:tuple=(True, True), 
         interpolant:str='quintic_polynomial') -> torch.Tensor:
-        """Perlin noise."""
+        """
+        Generate 2D Perlin noise.
+
+        :param shape: Output shape as (height, width).
+        :param density: Controls frequency of the noise pattern.
+        :param tileable: Whether noise should tile along each axis.
+        :param interpolant: Interpolation function name (e.g., 'linear', 'quintic_polynomial').
+        :return: Tensor of shape [1, H, W] with values in [0, 1].
+        """
         assert density > 0., cls.err_density_zero
         assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         res = (
@@ -184,7 +200,18 @@ class Noise:
             lacunarity:int=2, 
             tileable:tuple=(True, True),
             interpolant:str='quintic_polynomial') -> torch.Tensor:
-        """Fractal Perlin noise."""
+        """
+        Generate 2D fractal noise using layered Perlin noise.
+
+        :param shape: Output shape as (height, width).
+        :param density: Base frequency scale.
+        :param octaves: Number of noise layers.
+        :param persistence: Amplitude falloff per octave.
+        :param lacunarity: Frequency multiplier per octave.
+        :param tileable: Whether noise should tile along each axis.
+        :param interpolant: Interpolation function name.
+        :return: Tensor of shape [1, H, W] with values in [0, 1].
+        """
         assert density > 0., cls.err_density_zero
         assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         res = (
@@ -203,7 +230,19 @@ class Noise:
             tileable:tuple=(True, True),
             interpolant:str='quintic_polynomial', 
             ridge:bool=False) -> torch.Tensor:
-        """Turbulence noise."""
+        """
+        Generate 2D turbulence noise (absolute layered Perlin).
+
+        :param shape: Output shape as (height, width).
+        :param density: Base frequency scale.
+        :param octaves: Number of noise layers.
+        :param persistence: Amplitude falloff per octave.
+        :param lacunarity: Frequency multiplier per octave.
+        :param tileable: Whether noise should tile along each axis.
+        :param interpolant: Interpolation function name.
+        :param ridge: If True, applies ridge-remapping for sharper features.
+        :return: Tensor of shape [1, H, W] with values in [0, 1].
+        """
         assert density > 0., cls.err_density_zero
         assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         res = (
@@ -245,10 +284,115 @@ class Noise:
         density:float=5., 
         intensity:float=1., 
         tileable:tuple=(True, True)) -> torch.Tensor:
-        """Worley noise."""
+        """
+        Generate 2D Worley (cellular) noise.
+
+        :param shape: Output shape as (height, width).
+        :param density: Number of feature points per axis.
+        :param intensity: Multiplier for the distance field.
+        :param tileable: Whether noise should tile along each axis.
+        :return: Tensor of shape [1, H, W] with values in [0, 1].
+        """
         assert density > 0., cls.err_density_zero
         assert is_pot(shape[0]) and is_pot(shape[1]), cls.err_hw_pot
         density *= 10
         intensity = 0.01 * intensity
         out = cls.__worley_np(shape, density, tileable)
         return torch.from_numpy(np.expand_dims(out*intensity, 0).astype(np.float32)).clamp(0., 1.)
+
+# SPECTRAL-DOMAIN
+
+class SpectralNoise:
+    """
+    Spectral-domain procedural noise generators.
+    """
+
+    @classmethod
+    def noise_psd_2d(cls, height:int, width:int, psd=lambda f: torch.ones_like(f)):
+        """
+        Generate spectral 2D noise field. Shape (height, width) with a spectral shaping function psd.
+        
+        :param height: Field height.
+        :param width: Field width.
+        :param psd: a function that accepts a tensor f of shape (height, width//2+1) of frequency magnitudes
+             and returns a tensor of the same shape.
+        """
+        # Generate 2D white noise in the frequency domain.
+        X_white = torch.fft.rfft2(torch.randn(height, width))
+        
+        # Create frequency grids for the rfft2 output.
+        # For the first dimension, use full FFT frequencies.
+        fy = torch.fft.fftfreq(height, d=1.0)  # shape: (height,)
+        # For the second dimension, use rFFT frequencies.
+        fx = torch.fft.rfftfreq(width, d=1.0)   # shape: (width//2 + 1,)
+        
+        # Build 2D grids by broadcasting.
+        fy_grid = fy.view(height, 1)            # shape: (height, 1)
+        fx_grid = fx.view(1, -1)                 # shape: (1, width//2+1)
+        f_grid = torch.sqrt(fx_grid**2 + fy_grid**2)  # shape: (height, width//2+1)
+        
+        # Compute the spectral shaping function S and normalize its mean-square.
+        S = psd(f_grid)
+        S[0, 0] = 0  # Prevent NaN at DC
+        S = S / torch.sqrt(torch.mean(S ** 2, dim=(-2, -1), keepdim=True) + 1e-8)  # Avoid div by zero
+        
+        # Shape the white noise spectrum.
+        X_shaped = X_white * S
+        
+        # Inverse FFT to obtain a spatial-domain noise field.
+        return torch.fft.irfft2(X_shaped, s=(height, width))
+
+    @classmethod
+    def white(cls, height: int, width: int) -> torch.Tensor:
+        """
+        Generate 2D white noise (flat power spectrum).
+
+        :param height: Output height.
+        :param width: Output width.
+        :return: 2D tensor of white noise with shape (height, width).
+        """
+        return cls.noise_psd_2d(height, width, psd=lambda f: torch.ones_like(f))
+
+    @classmethod
+    def pink(cls, height: int, width: int) -> torch.Tensor:
+        """
+        Generate 2D pink noise (1/f spectrum).
+
+        :param height: Output height.
+        :param width: Output width.
+        :return: 2D tensor of pink noise with shape (height, width).
+        """
+        return cls.noise_psd_2d(height, width, psd=lambda f: f.pow(-1))
+
+    @classmethod
+    def brownian(cls, height: int, width: int) -> torch.Tensor:
+        """
+        Generate 2D brownian (red) noise (1/f² spectrum).
+
+        :param height: Output height.
+        :param width: Output width.
+        :return: 2D tensor of brownian noise with shape (height, width).
+        """
+        return cls.noise_psd_2d(height, width, psd=lambda f: f.pow(-2))
+
+    @classmethod
+    def blue(cls, height: int, width: int) -> torch.Tensor:
+        """
+        Generate 2D blue noise (f spectrum).
+
+        :param height: Output height.
+        :param width: Output width.
+        :return: 2D tensor of blue noise with shape (height, width).
+        """
+        return cls.noise_psd_2d(height, width, psd=lambda f: f)
+
+    @classmethod
+    def violet(cls, height: int, width: int) -> torch.Tensor:
+        """
+        Generate 2D violet noise (f² spectrum).
+
+        :param height: Output height.
+        :param width: Output width.
+        :return: 2D tensor of violet noise with shape (height, width).
+        """
+        return cls.noise_psd_2d(height, width, psd=lambda f: f.pow(2))

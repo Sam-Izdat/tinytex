@@ -3,15 +3,9 @@ tinytex
 
 Python texture sampling, processing and synthesis library for PyTorch-involved projects.
 
-This library is a hodgepodge of tangentially-related procedures useful for sampling, making and 
-modifying various kinds of textures. The primary input and output is batched or unbatched 
+This library is a hodgepodge of tangentially-related procedures useful for sampling, creating and 
+modifying various kinds of textures. This is primarily intended for batched or unbatched 
 PyTorch image tensors. This library provides:
-
-- backend-agnostic 1D/2D/3D textures for Taichi (if installed with Taichi optional requirement)
-    
-  - load from and save to the filesystem
-  - convert textures to and from PyTorch tensors
-  - sample textures with lower or higher-order interpolation/approximation
 
 - image resampling/rescaling, cropping and padding
 - tiling
@@ -35,10 +29,16 @@ PyTorch image tensors. This library provides:
 
 - approximating ambient occlusion and bent normals
 - blending multiple normal maps
-- generating tiling noise
+- pseudo-random number generation
+- generating tiling spatial-domain noise
+- generating spectral-domain noise
 - warping image coordinates
 - transforming 1D and 2D images to and from Haar wavelet coefficients
-- computing chromatic point spread functions and approximating aperture diffraction
+- (experimental) backend-agnostic 1D/2D/3D textures for Taichi (if installed with Taichi optional dependency)
+    
+  - load from and save to the filesystem
+  - convert textures to and from PyTorch tensors
+  - sample textures with lower or higher-order interpolation/approximation
 
 Getting started
 ---------------
@@ -59,16 +59,20 @@ Release version
 - imageio >=2.9 (with PNG-FI FreeImage plugin)
 - tqdm >=4.64
 - toml >=0.10
-- tinycio
+- tinycio >= 0.6.1
 
 .. rubric:: License
 
 :doc:`MIT License <source/license>` on all original code - see source for details
 
-Special thanks
---------------
 
-* Placeholder
+
+Reference
+---------
+
+.. only:: html
+
+    See: :doc:`reference section <source/tinytex>`.
 
 .. toctree::
     :maxdepth: 2
@@ -80,8 +84,12 @@ Special thanks
     source/license
     genindex
 
-.. source/about_modules
-.. source/tinytex
+
+Links
+-----
+
+* `GitHub <https://github.com/Sam-Izdat/tinytex>`_
+* `PyPi <https://pypi.org/project/tinytex/>`_
 
 .. toctree::
     :maxdepth: 2
@@ -90,16 +98,18 @@ Special thanks
 
     GitHub <https://github.com/Sam-Izdat/tinytex>
     PyPi <https://pypi.org/project/tinytex/>
-    Docs <https://sam-izdat.github.io/tinytex-docs/>
+    Docs <https://sam-izdat.github.io/tinytex/>
+
+Sibling projects
+----------------
+
+* `tinycio <https://sam-izdat.github.io/tinycio/>`_
+* `tinyfilm <https://sam-izdat.github.io/tinyfilm/>`_
 
 .. toctree::
     :maxdepth: 2
     :caption: Sibling projects:
     :hidden:
 
-    tinycio <https://sam-izdat.github.io/tinycio-docs/>
-    tinypbr <https://sam-izdat.github.io/tinypbr-docs/>
-    tinylcm <https://sam-izdat.github.io/tinylcm-docs/>
-    tinysimi <https://sam-izdat.github.io/tinysimi-docs/>
-    tinytrace <https://sam-izdat.github.io/tinytrace-docs/>
-    tinyraster <https://sam-izdat.github.io/tinyraster-docs/>
+    tinytex <https://sam-izdat.github.io/tinycio/>
+    tinyfilm <https://sam-izdat.github.io/tinyfilm/>

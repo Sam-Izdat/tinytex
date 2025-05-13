@@ -102,14 +102,14 @@ class Resampling:
         return res.squeeze(0) if nobatch else res
 
     @classmethod
-    def resize(cls, im:torch.Tensor, shape:tuple, mode:str='bilinear', iterative_downsample=True):    
+    def resize(cls, im:torch.Tensor, shape:tuple, mode:str='bilinear', iterative_downsample=False):    
         """
         Resize image tensor to target shape.
 
         :param im: Image tensor sized [C, H, W] or [N, C, H, W].
         :param shape: Target shape as (height, width) tuple.
-        :param mode: Resampleing algorithm ('nearest' | 'linear' | 'bilinear' | 'bicubic').
-        :param iterative_downsample: Iteratively average pixels if image dimension must breduced 2x or more.
+        :param mode: Resampleing algorithm ('nearest' | 'linear' | 'bilinear' | 'bicubic' | 'area').
+        :param iterative_downsample: Iteratively average pixels if image dimension must be reduced 2x or more.
         :return: Resampled image tensor sized [C, H, W] or [N, C, H, W].
         """
         ndim = len(im.size())
@@ -119,24 +119,22 @@ class Resampling:
         res = None
 
         if iterative_downsample:
-            while im.size(3) >= shape[1] * 2:
-                im = F.avg_pool2d(im, kernel_size=(1, 2), stride=(1, 2))
+            # Use symmetric pooling until both dimensions are < 2x target.
+            while im.size(2) >= shape[1] * 2 and im.size(3) >= shape[0] * 2:
+                im = F.avg_pool2d(im, kernel_size=2, stride=2)
 
-            while im.size(2) >= shape[0] * 2:
-                im = F.avg_pool2d(im, kernel_size=(2, 1), stride=(2, 1))
-
-        res = F.interpolate(im, size=shape, mode=mode, align_corners=True)
+        res = F.interpolate(im, size=shape, mode=mode, align_corners=False)
         return res.squeeze(0) if nobatch else res
 
     @classmethod
-    def resize_se(cls, im:torch.Tensor, size:int, mode:str='bilinear', iterative_downsample=True) -> torch.Tensor:
+    def resize_se(cls, im:torch.Tensor, size:int, mode:str='bilinear', iterative_downsample=False) -> torch.Tensor:
         """
         Resize image tensor by shortest edge, constraining proportions.
 
         :param im: Image tensor sized [C, H, W] or [N, C, H, W]
         :param size: Target size for shortest edge
-        :param mode: Resampleing algorithm ('nearest' | 'linear' | 'bilinear' | 'bicubic')
-        :param iterative_downsample: Iteratively average pixels if image dimension must breduced 2x or more.
+        :param mode: Resampleing algorithm ('nearest' | 'linear' | 'bilinear' | 'bicubic' | 'area')
+        :param iterative_downsample: Iteratively average pixels if image dimension must be reduced 2x or more.
         :return: Resampled image tensor sized [C, H, W] or [N, C, H, W]
         """
         ndim = len(im.size())
@@ -150,24 +148,23 @@ class Resampling:
         new_w = int(np.ceil(W * scale))
 
         if iterative_downsample:
-            while im.size(3) >= new_w * 2:
-                im = F.avg_pool2d(im, kernel_size=(1, 2), stride=(1, 2))
+            # Use symmetric pooling until both dimensions are < 2x target.
+            while im.size(2) >= new_h * 2 and im.size(3) >= new_w * 2:
+                im = F.avg_pool2d(im, kernel_size=2, stride=2)
 
-            while im.size(2) >= new_h * 2:
-                im = F.avg_pool2d(im, kernel_size=(2, 1), stride=(2, 1))
         
-        res = F.interpolate(im, size=(new_h, new_w), mode=mode, align_corners=True)
+        res = F.interpolate(im, size=(new_h, new_w), mode=mode, align_corners=False)
         return res.squeeze(0) if nobatch else res
 
     @classmethod
-    def resize_le(cls, im:torch.Tensor, size:int, mode:str='bilinear', iterative_downsample=True) -> torch.Tensor:
+    def resize_le(cls, im:torch.Tensor, size:int, mode:str='bilinear', iterative_downsample=False) -> torch.Tensor:
         """
         Resize image tensor by longest edge, constraining proportions.
 
         :param im: Image tensor sized [C, H, W] or [N, C, H, W]
         :param size: Target size for longest edge
-        :param mode: Resampleing algorithm ('nearest' | 'linear' | 'bilinear' | 'bicubic')
-        :param iterative_downsample: Iteratively average pixels if image dimension must breduced 2x or more.
+        :param mode: Resampleing algorithm ('nearest' | 'linear' | 'bilinear' | 'bicubic' | 'area')
+        :param iterative_downsample: Iteratively average pixels if image dimension must be reduced 2x or more.
         :return: Resampled image tensor sized [C, H, W] or [N, C, H, W]
         """
         ndim = len(im.size())
@@ -181,13 +178,12 @@ class Resampling:
         new_w = int(np.ceil(W * scale))
 
         if iterative_downsample:
-            while im.size(3) >= new_w * 2:
-                im = F.avg_pool2d(im, kernel_size=(1, 2), stride=(1, 2))
+            # Use symmetric pooling until both dimensions are < 2x target.
+            while im.size(2) >= new_h * 2 and im.size(3) >= new_w * 2:
+                im = F.avg_pool2d(im, kernel_size=2, stride=2)
 
-            while im.size(2) >= new_h * 2:
-                im = F.avg_pool2d(im, kernel_size=(2, 1), stride=(2, 1))
         
-        res = F.interpolate(im, size=(new_h, new_w), mode=mode, align_corners=True)
+        res = F.interpolate(im, size=(new_h, new_w), mode=mode, align_corners=False)
         return res.squeeze(0) if nobatch else res
 
     def resize_le_to_next_pot(im:torch.Tensor, mode:str='bilinear'):

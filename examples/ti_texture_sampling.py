@@ -27,10 +27,10 @@ class TextureSamplingExample:
             warp_uv *= 4.
             c = tm.vec4(0.0)
             if uv.x > 0.3:
-                if uv.y < 0.25:     c = self.s_bilin.sample_lod(self.tex, warp_uv, (tm.sin(t * 0.05) + 1) * 3.)
-                elif uv.y < 0.5:    c = self.s_bicub.sample_lod(self.tex, warp_uv, (tm.sin(t * 0.05) + 1) * 3.)
-                elif uv.y < 0.75:   c = self.s_mitne.sample_lod(self.tex, warp_uv, (tm.sin(t * 0.05) + 1) * 3.)
-                else:               c = self.s_bspln.sample_lod(self.tex, warp_uv, (tm.sin(t * 0.05) + 1) * 3.)
+                if uv.y < 0.25:     c = self.s_bilin.sample_lod(self.tex, warp_uv, (tm.sin(t * 0.15) + 1) * 3.)
+                elif uv.y < 0.5:    c = self.s_bicub.sample_lod(self.tex, warp_uv, (tm.sin(t * 0.15) + 1) * 3.)
+                elif uv.y < 0.75:   c = self.s_mitne.sample_lod(self.tex, warp_uv, (tm.sin(t * 0.15) + 1) * 3.)
+                else:               c = self.s_bspln.sample_lod(self.tex, warp_uv, (tm.sin(t * 0.15) + 1) * 3.)
             else: 
                 c = self.s_bilin.fetch(self.tex, tm.ivec2(i, res[1] - j))
 
@@ -39,7 +39,7 @@ class TextureSamplingExample:
             pixels[i, j] = [c.r, c.g, c.b]
 
 def main():
-    im = load_image('../doc/images/tinytex.png')
+    im = load_image('../doc/images/waits_color.png')
     tex = Texture2D(im, generate_mips=True)
     example = TextureSamplingExample(tex)
     

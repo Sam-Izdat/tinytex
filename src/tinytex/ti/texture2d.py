@@ -140,8 +140,9 @@ class Texture2D:
 
     def to_tensor(self):
         """Return texture as [C, H, W] sized PyTorch image tensor."""
-
-        return self.field.to_torch().permute(2, 0, 1)[:, 0:self.height, 0:self.width]    
+        tex = self.field.to_torch()
+        if tex.dim() == 2: tex = tex.unsqueeze(-1)
+        return tex.permute(2, 0, 1)[:, 0:self.height, 0:self.width]    
 
     # def _regenerate_mips_torch(self):
     #     # FIXME: Some kind of bullshit is happening here, and I don't know what it is.
