@@ -1,6 +1,7 @@
 import torch
 import torchvision.transforms.functional as TF
 import torch.nn.functional as F
+import numpy as np
 
 import typing
 from typing import Union
@@ -256,80 +257,79 @@ class Geometry:
         return res_disp, res_scale / 10.
 
     @classmethod
-    def height_to_curvature(cls, 
-        height_map:torch.Tensor, 
-        blur_kernel_size:float=(1. / 128.), 
-        blur_iter:int=1) -> (torch.Tensor, torch.Tensor, torch.Tensor):
+    def height_to_curvature(cls,
+        height_map: torch.Tensor,
+        blur_kernel_size: float = 1. / 128.,
+        blur_iter: int = 1
+    ) -> tuple:
         """
-        Compute mean curvature map from height map
+        Estimate mean curvature from a height map.
 
-        :param height_map: Height map tensor sized [N, C=1, H, W] or [C=1, H, W].
-        :param blur_kernel_size: Size of blur kernel.
-        :param blur_iter: Blur iterations.
-        :return: curvature map tensor sized [N, C=1, H, W] in [0, 1] range,
-            cavity map tensor [N, C=1, H, W] in [0, 1] range,
-            peak map tensor [N, C=1, H, W] in [0, 1] range
+        :param height_map: [N, 1, H, W] or [1, H, W] tensor.
+        :param blur_kernel_size: Relative kernel size for Gaussian blur.
+        :param blur_iter: Number of blur passes.
+        :return: (curvature, cavities, peaks) — each [N, 1, H, W]
         """
-        # see: http://rodolphe-vaillant.fr/entry/33/curvature-of-a-triangle-mesh-definition-and-computation
-        ndim = len(height_map.size())
-        assert ndim == 3 or ndim == 4, cls.err_size
-        nobatch = ndim == 3
-        if nobatch: height_map = height_map.unsqueeze(0)
-        assert height_map.size(1) == 1, cls.err_height_ch
-        res_curv, res_cav, res_peak = [], [], []
-        
-        # Remap values to the range [0, 1]
-        remap = lambda x : (x - torch.min(x)) / (torch.max(x) - torch.min(x))
+        import torch.nn.functional as F
+        import torchvision.transforms.functional as TF
 
-        # Adjust blur kernel size based on image dimensions
-        blur_kernel_size = int((H+W)/2 * blur_kernel_size) 
-        if blur_kernel_size % 2 == 0: blur_kernel_size += 1
+        if height_map.ndim == 3:
+            height_map = height_map.unsqueeze(0)  # [1, 1, H, W]
+        assert height_map.shape[1] == 1, "Input must be single-channel height map"
 
-        for i in range(height_map.size(1)):
-            hm = -height_map[i].clone()
+        N, C, H, W = height_map.shape
 
-            # First-order derivatives
-            dz_dx = torch.gradient(hm, dim=1)[0]
-            dz_dy = torch.gradient(hm, dim=2)[0]
+        # Compute blur kernel size
+        ksize = int(round((H + W) / 2 * blur_kernel_size))
+        if ksize % 2 == 0: ksize += 1
+        ksize = max(3, ksize)
 
-            # Second-order derivatives
-            d2z_dx2 = torch.gradient(dz_dx, dim=1)[0]
-            d2z_dy2 = torch.gradient(dz_dy, dim=2)[0]
-            d2z_dxdy = torch.gradient(dz_dx, dim=2)[0]
+        # Flip height for "up = positive"
+        hm = -height_map.clone()
 
-            # Construct Hessian matrix
-            H = torch.stack([torch.stack([d2z_dx2, d2z_dxdy], dim=3), torch.stack([d2z_dxdy, d2z_dy2], dim=3)], dim=4)
+        # Pad for finite differences (replicate avoids edge discontinuities)
+        hm_pad = F.pad(hm, (1, 1, 1, 1), mode='replicate')
 
-            # Compute eigenvalues of Hessian matrix
-            curvatures = torch.linalg.eigvalsh(H)
+        # Central differences
+        dz_dx = (hm_pad[:, :, 1:-1, 2:] - hm_pad[:, :, 1:-1, :-2]) / 2
+        dz_dy = (hm_pad[:, :, 2:, 1:-1] - hm_pad[:, :, :-2, 1:-1]) / 2
 
-            # Remap eigenvalues to [0, 1]
-            k1 = curvatures[..., 0]
-            k2 = curvatures[..., 1]
-            k1 = remap(k1)
-            k2 = remap(k2)
+        d2z_dx2 = hm_pad[:, :, 1:-1, 2:] - 2 * hm + hm_pad[:, :, 1:-1, :-2]
+        d2z_dy2 = hm_pad[:, :, 2:, 1:-1] - 2 * hm + hm_pad[:, :, :-2, 1:-1]
+        d2z_dxdy = (hm_pad[:, :, 2:, 2:] - hm_pad[:, :, 2:, :-2] - hm_pad[:, :, :-2, 2:] + hm_pad[:, :, :-2, :-2]) / 4
 
-            # Compute mean curvature
-            mean_curv = (k1 + k2).unsqueeze(0) / 2
+        # Hessian eigenvalues
+        H_00 = d2z_dx2
+        H_11 = d2z_dy2
+        H_01 = d2z_dxdy
+        trace = H_00 + H_11
+        det = H_00 * H_11 - H_01**2
+        sqrt_term = torch.sqrt(torch.clamp(trace**2 - 4 * det, min=0))
+        eig1 = (trace + sqrt_term) / 2
+        eig2 = (trace - sqrt_term) / 2
+        mean_curv = (eig1 + eig2) / 2  # already mean, but keep logic explicit
 
-            # Apply iterative Gaussian blur
-            for j in range(blur_iter): mean_curv = (mean_curv + TF.gaussian_blur(mean_curv, kernel_size=blur_kernel_size))/2
+        # Normalize to [0, 1]
+        def norm(x): return (x - x.amin(dim=(-2, -1), keepdim=True)) / (x.amax(dim=(-2, -1), keepdim=True) - x.amin(dim=(-2, -1), keepdim=True) + 1e-8)
+        mean_curv = norm(mean_curv)
 
-            # Compute concavity and peak maps
-            res_curv.append(mean_curv)
-            res_cav.append(1. - remap(mean_curv.clamp(0., 0.5)))
-            res_peak.append(remap(mean_curv.clamp(0.5, 1.)))
+        # Smooth
+        for _ in range(blur_iter):
+            mean_curv = (mean_curv + TF.gaussian_blur(mean_curv, ksize)) / 2
 
-        out = torch.cat(res_curv, dim=0), torch.cat(res_cav, dim=0), torch.cat(res_peak, dim=0)
-        return out.squeeze(0) if nobatch else out
+        # Derive masks
+        cavity_map = 1.0 - norm(mean_curv.clamp(0.0, 0.5))
+        peak_map = norm(mean_curv.clamp(0.5, 1.0))
+
+        return mean_curv, cavity_map, peak_map
 
     @classmethod
     def compute_occlusion(cls, 
         normal_map:torch.Tensor=None, 
         height_map:torch.Tensor=None,
-        height_scale:Union[torch.Tensor, float]=None, 
+        height_scale:Union[torch.Tensor, float]=1.0, 
         radius:float=0.08, 
-        samples:int=512,
+        n_samples:int=256,
         rescaled:bool=False) -> (torch.Tensor, torch.Tensor):
         """
         Compute ambient occlusion and bent normals from normal map and/or height map.
@@ -339,7 +339,7 @@ class Geometry:
             of surface normals
         :param height_scale: Height scale as tensor sized [N, C=1] or [C=1], or as float.
         :param radius: Occlusion radius.
-        :param samples: Number of occlusion samples per pixel.
+        :param n_samples: Number of occlusion samples per pixel.
         :param rescaled: Input and returned unit vector tensors should be in [0, 1] value range.
         :return: Ambient occlusion tensor sized [N, C=1, H, W] or [C=1, H, W], 
             bent normals tensor sized [N, C=3, H, W] or [C=3, H, W].
@@ -349,7 +349,7 @@ class Geometry:
             normal_map = cls.height_to_normals(height_map)
         if height_map is None:
             height_map, height_scale = cls.normals_to_height(normal_map)
-        assert height_map.size() == normal_map.size(), "height map and normal map tensors must have same number of dimensions"
+        assert len(height_map.size()) == len(normal_map.size()), "height map and normal map tensors must have same number of dimensions"
         ndim = len(height_map.size())
         assert ndim == 3 or ndim == 4, cls.err_size
         nobatch = ndim == 3
@@ -375,7 +375,7 @@ class Geometry:
                 dir_nc = cls.__norm_to_dir(nm, normalize_ip=True)
                 sample = torch.zeros_like(dir_nc)
                 ao, bn = torch.zeros_like(hm), torch.zeros_like(nm)
-                for j in range(samples):
+                for j in range(n_samples):
                     dir_sample = cls.__cwhs(H*W, device=device)
                     dir_sample = F.normalize(torch.cat((
                         dir_nc[:, 0:1] + dir_sample[:, 0:1],
@@ -391,8 +391,9 @@ class Geometry:
                     ao[mask] += 1
                     unoccluded_vec = dir_sample.reshape(H, W, 3).permute(2,0,1)
                     bn[~mask_bn] += unoccluded_vec[~mask_bn]
-                ao = ao.float() / samples
-                bn[bn == 0] = nm[bn == 0] # FIXME ~~~~~~~~~~~~~~~
+                ao = ao.float() / n_samples
+                norms = bn.norm(dim=0, keepdim=True)
+                bn = torch.where(norms > 1e-6, F.normalize(bn, dim=0), nm)
                 bn = F.normalize(bn, dim=0)
                 bn = torch.cat((bn[0:1,:,:], -bn[1:2,:,:], bn[2:3,:,:]), dim=0)
                 res_ao.append(1 - ao.unsqueeze(0))
@@ -460,7 +461,7 @@ class Geometry:
         with torch.no_grad():
             u = torch.rand(n, device=device)
             v = torch.rand(n, device=device)
-            phi = 2 * math.pi * u
+            phi = 2 * np.pi * u
             cos_theta = 1. - v
             sin_theta = torch.sqrt(1 - cos_theta ** 2)
             x = sin_theta * torch.cos(phi)
