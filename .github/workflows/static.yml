@@ -27,6 +27,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           sudo apt-get update && sudo apt-get install -y latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended
+      
+      - name: Install Sphinx
+        run: pip install sphinx
 
       - name: Build HTML docs
         run: make html
