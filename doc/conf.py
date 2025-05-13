@@ -18,7 +18,7 @@ import toml
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'tinytex'
-copyright = '2023, Sam Izdat'
+copyright = '2025, Sam Izdat'
 author = 'Sam Izdat'
 
 data = None
