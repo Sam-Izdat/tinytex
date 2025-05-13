@@ -30,13 +30,13 @@ jobs:
 
       - name: Build HTML docs
         run: make html
-        working-directory: docs
+        working-directory: ./docs
 
       - name: Build PDF docs
         run: |
           make latexpdf
           mv build/latex/*.pdf build/html/tinytex.pdf
-        working-directory: docs
+        working-directory: ./docs
 
       - name: Upload HTML artifact
         uses: actions/upload-pages-artifact@v3
