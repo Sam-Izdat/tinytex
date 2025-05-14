@@ -50,6 +50,6 @@ PyTorch image tensors. This library provides:
 * Recommended: set up a clean Python environment
 * [Install PyTorch  as instructed here](https://pytorch.org/get-started/locally/)
 * Run  `pip install tinytex`
-* Run  `ttex-setup` ([iio docs on fi](https://imageio.readthedocs.io/en/stable/_autosummary/imageio.plugins.freeimage.html#module-imageio.plugins.freeimage))
+* Run  `ttex-setup`
 
 [See the docs](https://sam-izdat.github.io/tinytex/) for the rest.
