@@ -3,7 +3,7 @@ import os
 import random
 
 from tinycio import fsio
-from tinytex import Resampling
+from .resampling import Resampling
 
 from .atlas import Atlas
 

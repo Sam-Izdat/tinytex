@@ -11,7 +11,8 @@ class PRNG:
     # - FordPerfect int hash https://www.shadertoy.com/view/dllSW7
     # - MurmurHash https://github.com/aappleby/smhasher/tree/master/src
 
-    def pt_hash_uint(x: torch.Tensor, normalize: bool = False) -> torch.Tensor:
+    @classmethod
+    def pt_hash_uint(cls, x: torch.Tensor, normalize: bool = False) -> torch.Tensor:
         """
         Hash a 1D tensor of integers using a uint-style hash.
 
@@ -30,7 +31,8 @@ class PRNG:
         if normalize: r = r.to(torch.float32) / 0xFFFFFFFF
         return r
 
-    def pt_hash2_uint(x: torch.Tensor, y: torch.Tensor, normalize=False) -> torch.Tensor:
+    @classmethod
+    def pt_hash2_uint(cls, x: torch.Tensor, y: torch.Tensor, normalize: bool = False) -> torch.Tensor:
         """
         2D hash using XQO-style bit-mixing.
 
@@ -44,7 +46,8 @@ class PRNG:
         h = pt_hash_uint((x * 0x85EBCA6B) ^ (y * 0xC2B2AE35))
         return h.to(torch.float32) / 0xFFFFFFFF if normalize else h
 
-    def pt_hash2_uv(uv: torch.Tensor, seed: int = 0, tile_size: int = 1023) -> torch.Tensor:
+    @classmethod
+    def pt_hash2_uv(cls, uv: torch.Tensor, seed: int = 0, tile_size: int = 1023) -> torch.Tensor:
         """
         Hash 2D normalized UV coordinates. Produces uniform pseudo-random values.
 
@@ -60,7 +63,8 @@ class PRNG:
         hashed_value = pt_hash_uint(idx)
         return hashed_value.to(torch.float32) / 0xFFFFFFFF
 
-    def pt_hash2_xy(xy: torch.Tensor, seed: int = 0, tile_size: int = 1023) -> torch.Tensor:
+    @classmethod
+    def pt_hash2_xy(cls, xy: torch.Tensor, seed: int = 0, tile_size: int = 1023) -> torch.Tensor:
         """
         Hash 2D XY integer coordinates. Produces uniform pseudo-random values.
 
@@ -75,7 +79,8 @@ class PRNG:
         hashed_value = pt_hash_uint(idx)
         return hashed_value.to(torch.float32) / 0xFFFFFFFF
 
-    def np_hash_uint(x, normalize = False):
+    @classmethod
+    def np_hash_uint(cls, x: np.ndarray, normalize: bool = False) -> np.ndarray:
         """
         1D NumPy-style uint hash.
 
@@ -92,7 +97,8 @@ class PRNG:
             x ^= x >> 13
         return x / np.float32(0xFFFFFFFF) if normalize else x
 
-    def np_hash2_uint(x, y, normalize = False):
+    @classmethod
+    def np_hash2_uint(cls, x: np.ndarray, y: np.ndarray, normalize = False) -> np.ndarray:
         """
         2D NumPy-style uint hash using mixing constants.
 
@@ -107,7 +113,8 @@ class PRNG:
             r = np_hash_uint(x * np.uint32(0x85EBCA6B) ^ y * np.uint32(0xC2B2AE35))
         return r / np.float32(0xFFFFFFFF) if normalize else x
 
-    def pt_noise2(p: torch.Tensor) -> torch.Tensor:
+    @classmethod
+    def pt_noise2(cls, p: torch.Tensor) -> torch.Tensor:
         """
         2D value noise scramble.
 
@@ -124,7 +131,8 @@ class PRNG:
 
         return (torch.sin(r) * 18.5453).remainder(1.0)
 
-    def pt_noise3(p: torch.Tensor) -> torch.Tensor:
+    @classmethod
+    def pt_noise3(cls, p: torch.Tensor) -> torch.Tensor:
         """
         3D value noise scramble.
 

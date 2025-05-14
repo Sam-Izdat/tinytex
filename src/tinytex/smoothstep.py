@@ -204,7 +204,7 @@ class Smoothstep:
         return x * x / (2. * x * x - 2. * x + 1.)
 
     @classmethod
-    def inv_quadratic_rational(x):
+    def inv_quadratic_rational(cls, x):
         """
         Inverse quadratic rational interpolation.
         """

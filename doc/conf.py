@@ -35,13 +35,14 @@ with open('../pyproject.toml', 'r') as f:
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+
 extensions = [
     'sphinx.ext.autodoc',
-    # 'sphinx_autodoc_typehints',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
-    'sphinx.ext.autosummary'
-]
+    'sphinx.ext.autosummary',
+    'sphinx.ext.graphviz'
+];
 
 autosummary_generate = True
 
@@ -72,3 +73,23 @@ autodoc_mock_imports = ["torch", "torchvision", "scipy"]
 
 html_show_sphinx = False
 html_show_copyright = False
+html_js_files = [
+]
+html_css_files = [
+]
+
+rst_epilog = """
+.. |->|    unicode:: U+2192 .. right arrow
+.. |<-|     unicode:: U+2190 .. left arrow
+.. |check| unicode:: U+2714 .. checkmark
+.. |+-|    unicode:: U+00B1 .. plus-minus
+.. |deg|   unicode:: U+00B0 .. degree symbol
+.. |micro| unicode:: U+00B5 .. mu (micro)
+.. |times| unicode:: U+00D7 .. multiplication
+.. |neq|   unicode:: U+2260 .. not equal
+.. |leq|   unicode:: U+2264 .. less/equal
+.. |geq|   unicode:: U+2265 .. greater/equal
+.. |approx| unicode:: U+2248 .. approximately
+"""
+
+numfig = True

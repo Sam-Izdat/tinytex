@@ -8,7 +8,6 @@ from .geometry import *
 from .wavelet import *
 from .warping import *
 from .mask import *
-from .util import *
 from .prng import *
-from .sampling import *
 from .voronoi import *
+from .util import *
