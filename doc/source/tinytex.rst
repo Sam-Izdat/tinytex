@@ -8,9 +8,8 @@ API Reference
 
         Resampling
         Atlas
-        Geometry
+        SurfaceOps
         Smoothstep
-        PRNG
         SpectralNoise
         SpatialNoise
         Voronoi
@@ -27,15 +26,11 @@ API Reference
         :members:
         :show-inheritance:
 
-    .. autoclass:: Geometry
+    .. autoclass:: SurfaceOps
         :members:
         :show-inheritance:
 
     .. autoclass:: Smoothstep
-        :members:
-        :show-inheritance:
-
-    .. autoclass:: PRNG
         :members:
         :show-inheritance:
 
@@ -70,4 +65,5 @@ API Reference
 .. toctree::
     :maxdepth: 4
 
+    rand
     ti

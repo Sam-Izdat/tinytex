@@ -6,7 +6,7 @@ import torch
 from scipy.sparse import lil_matrix
 import scipy.signal
 
-from .geometry import Geometry
+from .geometry import SurfaceOps
 
 lss_enabled = "spsolve"
 try:
@@ -173,7 +173,7 @@ class Tiling:
         if vector_data:
             assert C == 3, "vector data must have 3 channel components"
             for n in range(N):
-                tiles_tmp.append(Geometry.normals_to_angles(tiles[n:n+1,...]))
+                tiles_tmp.append(SurfaceOps.normals_to_angles(tiles[n:n+1,...]))
             tiles_tmp = torch.cat(tiles_tmp, dim=0)
         else:
             tiles_tmp = tiles.clone()
@@ -183,7 +183,7 @@ class Tiling:
                 blended_tiles[0, c:c+1] = cls.__poisson_blend(tiles_tmp[0, c:c+1], torch_tensors=True, cb=print)
         else:
             for n in range(N):
-                pos_r, pos_c = cls.get_tile_position(n, rows, cols)
+                pos_r, pos_c = cls.get_tile_position(n, cols)
                 t, r, b, l = cls.get_tile_neighbors(pos_r, pos_c, rows, cols, wrap=wrap)
                 for c in range(tiles_tmp.size(1)):
                     blended_tiles[n, c:c+1] = cls.__poisson_blend(tiles_tmp[n, c:c+1],
@@ -195,7 +195,7 @@ class Tiling:
                         cb=print)                    
         if vector_data:
             for n in range(N):
-                blended_tiles[n:n+1] = Geometry.angles_to_normals(blended_tiles[n:n+1,...])
+                blended_tiles[n:n+1] = SurfaceOps.angles_to_normals(blended_tiles[n:n+1,...])
         return blended_tiles.squeeze(0) if nobatch else blended_tiles
 
     @classmethod        

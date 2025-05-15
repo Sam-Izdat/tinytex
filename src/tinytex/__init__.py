@@ -7,7 +7,6 @@ from .sdf import *
 from .geometry import *
 from .wavelet import *
 from .warping import *
-from .mask import *
-from .prng import *
 from .voronoi import *
+from .rand import *
 from .util import *

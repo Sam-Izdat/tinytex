@@ -1,6 +1,6 @@
 [project]
 name = "tinytex"
-version = "0.1.5"
+version = "0.2.0"
 authors = [
   { name="Sam Izdat", email="ghsamizdat@gmail.com" },
 ]

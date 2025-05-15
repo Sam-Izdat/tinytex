@@ -5,8 +5,6 @@ import numpy as np
 import typing
 from typing import Union
 
-from combomethod import combomethod
-
 from tinycio import fsio
 
 from .util import *
@@ -16,15 +14,29 @@ class Atlas:
 
     """Texture atlas packing and sampling."""
 
-    min_auto_size = 64
-    max_auto_size = 8192
-    auto_force_square = False
+    min_size = 64
+    max_size = 8192
+    force_square = False
 
-    def __init__(self, min_auto_size:int=64, max_auto_size:int=8192, auto_force_square:bool=False):
-        self.min_auto_size = min_auto_size
-        self.max_auto_size = max_auto_size
-        self.auto_force_square = auto_force_square
+    block_size = 256
 
+    def __init__(self, min_size=64, max_size=8192, force_square=False):
+        self.min_size = min_size
+        self.max_size = max_size
+        self.force_square = force_square
+        self._textures = {}  # key: name, value: tensor
+        self.atlas = None
+        self.index = None
+    
+    def add(self, key: str, tensor: torch.Tensor) -> None:
+        """
+        Add a named texture to the atlas.
+
+        :param key: Identifier for the texture.
+        :param tensor: Image tensor in CHW format.
+        """
+        self._textures[key] = tensor
+    
     class _TextureRect:
         def __init__(self, tensor, idx, key):
             self.tensor = tensor
@@ -36,89 +48,122 @@ class Atlas:
 
     err_out_of_bounds = 'failed to to fit textures into atlas'
 
-    @combomethod
-    def pack(cls, 
-        textures:dict, 
-        max_height:int=0, 
-        max_width:int=0, 
-        auto_crop:bool=True, 
-        row_pack:bool=False,
-        sort:str='height') -> (torch.Tensor, tuple):
-        """Pack textures into atlas."""
-        H, W = max_height, max_width
-        auto_crop = auto_crop and not cls.auto_force_square
+    def pack(self,
+             max_h: int = 0,
+             max_w: int = 0,
+             crop: bool = True,
+             row: bool = False,
+             sort: str = 'height') -> tuple:
+        """
+        Pack added textures into a single atlas image.
+
+        :param max_h: Max atlas height. If 0, auto-expand.
+        :param max_w: Max atlas width. If 0, auto-expand.
+        :param crop: Crop output to tight bounding box.
+        :param row: Use row-based packing instead of rectangle packing.
+        :param sort: Sorting mode for texture order ('height', 'width', 'area').
+
+        :return: (Atlas tensor, index dictionary with coordinates per texture).
+        """
+        H, W = max_h, max_w
+        auto_crop = crop and not self.force_square
         if W == 0 or H == 0:
             i = 0
             auto_width, auto_height = W, H
-            while auto_height < cls.max_auto_size and auto_width < cls.max_auto_size:
-                if cls.auto_force_square:
-                    auto_height = (H or int(next_pot(cls.min_auto_size)) << i)
-                    auto_width = (W or int(next_pot(cls.min_auto_size)) << i)
+            while auto_height < self.max_size and auto_width < self.max_size:
+                if self.force_square:
+                    auto_height = (H or int(next_pot(self.min_size)) << i)
+                    auto_width = (W or int(next_pot(self.min_size)) << i)
                 else:
                     if H == 0 and (W != 0 or auto_width > auto_height):
-                        auto_height = (H or int(next_pot(cls.min_auto_size)) << i)
+                        auto_height = (H or int(next_pot(self.min_size)) << i)
                     elif W == 0 and (H != 0 or auto_height >= auto_width):
-                        auto_width = (W or int(next_pot(cls.min_auto_size)) << i)
+                        auto_width = (W or int(next_pot(self.min_size)) << i)
                     else:
                         raise Exception('undefined') # should not happen
-                atlas, index = cls.__row_pack(textures, (auto_height, auto_width), sort=sort, auto_crop=auto_crop) if row_pack \
-                    else cls.__rect_pack(textures, (auto_height, auto_width), sort=sort, auto_crop=auto_crop)
+                atlas, index = self.__row_pack(self._textures, (auto_height, auto_width), sort=sort, auto_crop=auto_crop) if row \
+                    else self.__rect_pack(self._textures, (auto_height, auto_width), sort=sort, auto_crop=auto_crop)
                 if not atlas is False:
-                    return atlas, index
+                    self.atlas = atlas
+                    self.index = index
+                    return self.atlas, self.index
                 i += 1
-            raise Exception(cls.err_out_of_bounds + f" at w {auto_width} h {auto_height}")
-        return cls.__row_pack(textures, (H, W), auto_crop=auto_crop, sort=sort, must_succeed=True) if row_pack \
-            else cls.__rect_pack(textures, (H, W), auto_crop=auto_crop, sort=sort, must_succeed=True) 
+            raise Exception(self.err_out_of_bounds + f" at w {auto_width} h {auto_height}")
 
-    @combomethod
-    def pack_dir(cls, 
-        dp:str, 
-        ext:str='.png', 
-        max_height:int=0, 
-        max_width:int=0, 
-        auto_crop:bool=True, 
-        row_pack:bool=False,
-        sort:str='height',
-        channels:int=3,
-        allow_channel_mismatch=True) -> (torch.Tensor, list):
-        """
-        Pack atlas with image files in target directory. Images base filenames will be used as keys. Non-recursive.
-        """
-        textures = {}
-        for fn in os.listdir(dp):
-            fp = os.path.join(dp, fn)
-            fnext = os.path.splitext(fn)[1]
-            if os.path.isfile(fp) and (fnext == ext):
-                im = fsio.load_image(fp)
-                if allow_channel_mismatch:
-                    if im.size(0) < channels: im = im.repeat(channels, 1, 1)
-                    if im.size(0) > channels: im = im[0:channels, ...]
-                else:
-                    assert channels == im.size(0), f"channel size mismatch for: {fn} - expected {channels}, got {im.size(0)}"
-                fnwe = os.path.splitext(os.path.basename(fp))[0]
-                textures[fnwe] = im
-        assert len(textures) > 0, "did not find any textures"
-        return cls.pack(textures=textures, max_height=max_height, max_width=max_width, auto_crop=auto_crop, row_pack=row_pack, sort=sort)
+        res = self.__row_pack(textures, (H, W), auto_crop=auto_crop, sort=sort, must_succeed=True) if row \
+            else self.__rect_pack(textures, (H, W), auto_crop=auto_crop, sort=sort, must_succeed=True) 
 
-    @combomethod
-    def sample(cls, atlas:torch.Tensor, index:dict, key:Union[str, int]):
-        """Retrieve image from atlas."""
-        assert len(index) > 0, "index is empty"
-        if isinstance(key, str) and key in index:
-            x0, y0, x1, y1 = index[key]
-            return atlas[:, int(y0):int(y1), int(x0):int(x1)]
+        self.atlas = res.atlas
+        self.index = res.index
+        return self.atlas, self.index
+
+    @classmethod
+    def from_dir(cls,
+                 path: str,
+                 ext: str = '.png',
+                 channels: int = 3,
+                 allow_mismatch: bool = True,
+                 max_h: int = 0,
+                 max_w: int = 0,
+                 crop: bool = True,
+                 row: bool = False,
+                 sort: str = 'height') -> 'Atlas':
+        """
+        Load all matching image files from a directory and pack them.
+
+        :param path: Path to image directory.
+        :param ext: File extension to match.
+        :param channels: Expected channel count.
+        :param allow_mismatch: Auto pad/trim to match channels.
+        :param max_h: Optional max height for atlas.
+        :param max_w: Optional max width for atlas.
+        :param crop: Whether to crop excess space after packing.
+        :param row: Whether to use row packing.
+        :param sort: Sorting mode.
+
+        :return: Packed Atlas instance.
+        """
+        atlas = cls()
+        for fn in os.listdir(path):
+            if not fn.endswith(ext): continue
+            im = fsio.load_image(os.path.join(path, fn))
+            if allow_mismatch:
+                if im.size(0) < channels: im = im.repeat(channels, 1, 1)
+                if im.size(0) > channels: im = im[:channels]
+            else:
+                assert im.size(0) == channels, f"channel mismatch: {fn}"
+            key = os.path.splitext(fn)[0]
+            atlas.add(key, im)
+        assert len(atlas._textures) > 0, "no images found"
+        atlas.pack(max_h=max_h, max_w=max_w, crop=crop, row=row, sort=sort)
+        return atlas
+
+    def sample(self, key: Union[str, int]) -> torch.Tensor:
+        """
+        Retrieve a single texture by name or index.
+
+        :param key: Texture name or integer index.
+        :return: Image tensor sliced from the atlas.
+        """
+        assert len(self.index) > 0, "index is empty"
+        if isinstance(key, str) and key in self.index:
+            x0, y0, x1, y1 = self.index[key]
+            return self.atlas[:, int(y0):int(y1), int(x0):int(x1)]
         elif isinstance(key, int):
-            x0, y0, x1, y1 = list(index.values())[key]
-            return atlas[:, int(y0):int(y1), int(x0):int(x1)]
+            x0, y0, x1, y1 = list(self.index.values())[key]
+            return self.atlas[:, int(y0):int(y1), int(x0):int(x1)]
         else:
             raise KeyError("key not found in index")
 
-    @combomethod
-    def sample_random(cls, atlas:torch.Tensor, index:dict):
-        """Retrieve random image from atlas."""
-        assert len(index) > 0, "index is empty"
-        x0, y0, x1, y1 = random.choice(list(index.values()))
-        return atlas[:, int(y0):int(y1), int(x0):int(x1)]
+    def sample_random(self) -> torch.Tensor:
+        """
+        Retrieve a randomly chosen texture from the atlas.
+
+        :return: Image tensor sliced from the atlas.
+        """
+        assert len(self.index) > 0, "index is empty"
+        x0, y0, x1, y1 = random.choice(list(self.index.values()))
+        return self.atlas[:, int(y0):int(y1), int(x0):int(x1)]
 
 
     @classmethod
@@ -311,3 +356,64 @@ class Atlas:
 
         if auto_crop: atlas = Resampling.crop(atlas, (max_h, max_w))
         return atlas, index
+
+    def generate_mask(self, shape: tuple, scale: float = 1.0, samples: int = 2) -> torch.Tensor:
+        """
+        Generate a tiling mask by randomly overlaying textures.
+
+        :param shape: Output (H, W) of the canvas.
+        :param scale: Relative size of overlays.
+        :param samples: Density multiplier for overlays.
+        :return: Output image tensor.
+        """
+
+        output_size = (self.atlas.size(0), shape[0], shape[1])
+        output_image = torch.zeros(output_size)
+
+        num_overlays = int(((shape[0] * shape[1]) / scale / self.block_size**2) * samples)
+
+        for _ in range(num_overlays):
+
+            # Load the overlay texture
+            overlay_texture = self.sample_random()
+            overlay_size = overlay_texture.size()[1:]
+            overlay_texture = Resampling.resize_le(overlay_texture, max(overlay_size[0], overlay_size[1]) * scale)
+            overlay_size = overlay_texture.size()[1:]
+
+            # Random position from the top-left
+            position = (random.randint(0, shape[0] - 1), random.randint(0, shape[1] - 1))
+            wrap_width, wrap_height = 0, 0
+
+            # If overlay exceeds canvas borders, draw truncated part on the opposite side
+            if position[0] + overlay_size[0] > shape[0]:
+                wrap_height = (position[0] + overlay_size[0]) % shape[0]
+
+            if position[1] + overlay_size[1] > shape[1]:
+                wrap_width = (position[1] + overlay_size[1]) % shape[1]
+
+            if wrap_width == 0 and wrap_height == 0:
+                output_image[:, position[0]:position[0]+overlay_size[0], position[1]:position[1]+overlay_size[1]] += overlay_texture
+            else:
+                max_pos_h = position[0]+overlay_size[0]-wrap_height
+                max_pos_w = position[1]+overlay_size[1]-wrap_width
+
+                # non-overflow top-left quadrant
+                output_image[:, position[0]:max_pos_h, position[1]:max_pos_w] += \
+                    overlay_texture[:, 0:overlay_size[0]-wrap_height, 0:overlay_size[1]-wrap_width]
+
+                # overflow top-right quadrant
+                if wrap_width > 0:
+                    output_image[:, position[0]:max_pos_h, 0:wrap_width] += \
+                        overlay_texture[:, 0:overlay_size[0]-wrap_height, overlay_size[1]-wrap_width:overlay_size[1]]
+
+                # overflow bottom-left quadrant
+                if wrap_height > 0:
+                    output_image[:, 0:wrap_height, position[1]:max_pos_w] += \
+                        overlay_texture[:, overlay_size[0]-wrap_height:overlay_size[0], 0:overlay_size[1]-wrap_width]
+
+                # overflow bottom-right quadrant
+                if wrap_height > 0 and wrap_height > 0:
+                    output_image[:, 0:wrap_height, 0:wrap_width] += \
+                        overlay_texture[:, overlay_size[0]-wrap_height:overlay_size[0], overlay_size[1]-wrap_width:overlay_size[1]]
+
+        return output_image

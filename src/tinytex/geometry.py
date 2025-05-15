@@ -9,7 +9,7 @@ from typing import Union
 from .util import *
 from .resampling import Resampling
 
-class Geometry:
+class SurfaceOps:
     """
     Geometric surface processing. Where applicable, assumes a right-handed 
     y-up, x-right, z-back coordinate system and OpenGL-style normal maps.

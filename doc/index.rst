@@ -63,6 +63,26 @@ About
 
 :doc:`MIT License <source/license>` on all original code - see source for details
 
+How to
+------
+
+.. only:: html
+
+    The :doc:`how-to section <source/howto_resample>` has a brief tutorial on the library's core functionality.
+
+.. toctree::
+    :maxdepth: 4
+    :caption: How to:
+    :hidden:
+
+    source/howto_resample
+    source/howto_atlas
+    source/howto_surface
+    source/howto_smoothstep
+    source/howto_noise
+    source/howto_sdf
+    source/howto_tiles
+
 Reference
 ---------
 
