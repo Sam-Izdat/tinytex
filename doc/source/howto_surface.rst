@@ -7,7 +7,8 @@ Convert normal maps to angle maps:
 
 .. code-block:: python
 
-    from tinytex import SurfaceOps, fsio
+    from tinytex import SurfaceOps
+    from tinycio import fsio
 
     normal_map = fsio.load_image("normal.png")
     angle_map = SurfaceOps.normals_to_angles(normal_map, normalize=True, rescaled=True)

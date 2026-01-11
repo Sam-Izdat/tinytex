@@ -435,7 +435,7 @@ class Resampling:
             W0 = max(1, W0_start >> lod_floor)
             O0 = offsets[lod_floor-1]
         else:
-            W0_start, H0, W0, O0 = 0, H_total, W_total, 0
+            W0_start, H0, W0, O0 = 0, H_total, W_total // 3 * 2, 0
         mip0 = pyramid[:, O0:O0+H0, W0_start:W0_start+W0]
 
         if lod_ceil > 0:
@@ -444,7 +444,7 @@ class Resampling:
             W1 = max(1, W1_start >> lod_ceil)
             O1 = offsets[lod_ceil-1]
         else:
-            W1_start, H1, W1, O1 = 0, H_total, W_total, 0
+            W1_start, H1, W1, O1 = 0, H_total, W_total // 3 * 2, 0
         mip1 = pyramid[:, O1:O1+H1, W1_start:W1_start+W1]
 
         sampled0 = sample_level(mip0, height, width)

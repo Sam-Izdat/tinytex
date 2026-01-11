@@ -26,8 +26,6 @@ Call directly on the class:
 
 .. code-block:: python
 
-    from tinytex import Smoothstep
-
     y = Smoothstep.apply('quintic_polynomial', 0.0, 1.0, x)
     y3 = Smoothstep.apply('rational', 0.0, 1.0, x, n=5)
 
@@ -37,8 +35,6 @@ Normalize inputs manually
 If you need to clamp or remap before interpolation:
 
 .. code-block:: python
-
-    from tinytex import Smoothstep
 
     x_norm = Smoothstep._normalize(x, edge0, edge1)
 

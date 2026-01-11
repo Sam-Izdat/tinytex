@@ -4,6 +4,10 @@ from typing import Union
 
 import torch
 
+from tinycio.util import fract
+import tinycio.util.const as G
+from .rand import pt_noise2
+
 class Voronoi:
     """Voronoi-based generators."""
     @classmethod
@@ -76,7 +80,7 @@ class Voronoi:
         aspect_ten = torch.tensor([aspect, 1.0]).unsqueeze(-1).unsqueeze(-1).to(uv_screen.device)
         uv_scene = zoom_ten + (uv_screen - zoom_ten) * aspect_ten / scale
         xa = uv_scene * vn_scale
-        v = self.vn_snap_offset(xa, seed)  # [F1, F2, offset_x, offset_y]
+        v = self.snap_offset(xa, seed)  # [F1, F2, offset_x, offset_y]
         edge_dist = v[1] - v[0]
         snapped_scene = (xa + v[2:4]) / vn_scale
         final_uv = zoom_ten + (snapped_scene - zoom_ten) * scale / aspect_ten

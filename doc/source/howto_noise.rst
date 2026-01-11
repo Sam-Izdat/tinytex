@@ -41,7 +41,7 @@ Generate flat-spectrum white noise:
 
     img = SpectralNoise.white(256, 256)
 
-Generate other types of colored noise
+Generate other types of colored noise:
 
 .. code-block:: python
 

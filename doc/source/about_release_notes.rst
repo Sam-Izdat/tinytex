@@ -1,6 +1,11 @@
 Release notes
 =============
 
+.. rubric:: v 0.2.1 a - May 2025
+
+* Voronoi fix.
+* Pyramid sampling at LOD 0 fix.
+
 .. rubric:: v 0.2.0 a - May 2025
 
 * Multiple bug fixes.
